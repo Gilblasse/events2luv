@@ -29,3 +29,5 @@ yarn-error.log*
 *.sqlite*
 .editor-test-build.mjs
 /assets/original/
+
+.eslintcache
