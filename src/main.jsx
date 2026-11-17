@@ -629,13 +629,20 @@ function Editor() {
     setUploading(true);
     setError("");
     try {
-      const body = new FormData();
-      body.append("file", file);
-      const r = await request("/api/upload", {
-        method: "POST",
-        headers: { "x-csrf-token": c.session.csrf },
-        body,
-      });
+      let r;
+      if (import.meta.env.VITE_NETLIFY_UPLOADS === 'true') {
+        const headers = { 'x-csrf-token': c.session.csrf };
+        const upload = await request('/api/uploads/start', {method:'POST',headers,body:JSON.stringify({name:file.name,size:file.size,mime:file.name.endsWith('.vtt')?'text/vtt':file.type})});
+        for(let offset=0;offset<file.size;offset+=upload.chunkSize) {
+          const response=await fetch(`/api/uploads/${upload.id}/${offset/upload.chunkSize}`,{method:'PUT',headers:{...headers,'content-type':'application/octet-stream'},body:file.slice(offset,offset+upload.chunkSize)});
+          if(!response.ok)throw Error('Upload interrupted. Please choose the file again.');
+        }
+        r=await request(`/api/uploads/${upload.id}/finish`,{method:'POST',headers,body:'{}'});
+      } else {
+        const body = new FormData();
+        body.append("file", file);
+        r = await request("/api/upload", {method:"POST",headers:{"x-csrf-token":c.session.csrf},body});
+      }
       c.pending.current.push(r.src);
       change(key, r.src);
     } catch (e) {

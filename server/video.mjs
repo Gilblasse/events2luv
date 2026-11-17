@@ -16,7 +16,7 @@ export async function processVideo(input) {
       output = join(dir, "video.mp4");
     await writeFile(source, input);
     const { stdout } = await run(
-      "ffprobe",
+      process.env.NETLIFY ? (await import("ffprobe-static")).default.path : "ffprobe",
       [
         "-v",
         "error",
@@ -46,7 +46,7 @@ export async function processVideo(input) {
         "Use an MP4 or WebM video under 5 minutes and at most 4096 pixels wide or high.",
       );
     await run(
-      "ffmpeg",
+      process.env.NETLIFY ? (await import("ffmpeg-static")).default : "ffmpeg",
       [
         "-nostdin",
         "-v",
@@ -83,7 +83,7 @@ export async function processVideo(input) {
         "300",
         output,
       ],
-      { timeout: 240000, maxBuffer: 1024 * 1024 },
+      { timeout: process.env.NETLIFY ? 35000 : 240000, maxBuffer: 1024 * 1024 },
     );
     const buffer = await readFile(output);
     if (buffer.length > 100 * 1024 * 1024)

@@ -14,11 +14,17 @@
     "admin": "node scripts/admin.mjs"
   },
   "dependencies": {
+    "@netlify/blobs": "^11.1.9",
+    "@netlify/database": "^2.0.3",
     "express": "^5.1.0",
+    "ffmpeg-static": "^5.3.0",
+    "ffprobe-static": "^3.1.0",
     "multer": "^2.0.2",
     "nodemailer": "^10.6.0",
+    "pg": "^8.23.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "serverless-http": "^4.0.0",
     "sharp": "^0.35.5"
   },
   "devDependencies": {

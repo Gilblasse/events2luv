@@ -1,4 +1,5 @@
 import express from "express";
+import { putMedia, sendMedia, removeMedia, installChunkUploads } from "./netlify-media.mjs";
 import { processVideo } from "./video.mjs";
 import multer from "multer";
 import sharp from "sharp";
@@ -18,7 +19,7 @@ import { validateBlock } from "./schema.mjs";
 const app = express(),
   prod = process.env.NODE_ENV === "production";
 if (process.env.TRUST_PROXY) app.set("trust proxy", process.env.TRUST_PROXY);
-if (prod && !process.env.APP_ORIGIN)
+if (prod && !process.env.APP_ORIGIN && !process.env.NETLIFY)
   throw Error("APP_ORIGIN is required in production.");
 const mediaDir = resolve(dataDir, "media");
 mkdirSync(mediaDir, { recursive: true });
@@ -34,7 +35,7 @@ app.use((req, res, next) => {
   next();
 });
 app.use(express.json({ limit: "100kb" }));
-app.use((req, res, next) => {
+app.use(async (req, res, next) => {
   let token;
   try {
     token = decodeURIComponent(
@@ -46,7 +47,7 @@ app.use((req, res, next) => {
     );
   } catch {}
   req.session = token
-    ? db
+    ? await db
         .prepare("SELECT * FROM sessions WHERE token=? AND expires>?")
         .get(hashToken(token), Date.now())
     : null;
@@ -58,7 +59,7 @@ const gate = (req, res, next) =>
     : res.status(401).json({ error: "Please sign in as an admin." });
 function origin(req, res, next) {
   const expected =
-    process.env.APP_ORIGIN || `${req.protocol}://${req.headers.host}`;
+    (process.env.NETLIFY ? process.env.DEPLOY_PRIME_URL || process.env.URL : process.env.APP_ORIGIN) || `${req.protocol}://${req.headers.host}`;
   if (req.headers.origin !== expected)
     return res.status(403).json({ error: "Request origin is not allowed." });
   next();
@@ -70,7 +71,8 @@ const csrf = (req, res, next) =>
         .status(403)
         .json({ error: "Your session changed. Refresh and sign in again." });
 const limits = new Map();
-function rate(key, max, window) {
+async function rate(key, max, window) {
+  if (process.env.NETLIFY) return (await import("./postgres-store.mjs")).rate(key, max, window);
   const now = Date.now();
   if (limits.size > 10000)
     for (const [k, v] of limits) if (v.until < now) limits.delete(k);
@@ -84,14 +86,14 @@ app.use("/api", (req, res, next) => {
   res.set("Cache-Control", "no-store");
   next();
 });
-app.get("/api/content", (req, res) => res.json(allBlocks()));
+app.get("/api/content", async (req, res) => res.json(await allBlocks()));
 app.get("/api/session", (req, res) =>
   res.json(
     req.session ? { email: req.session.email, csrf: req.session.csrf } : {},
   ),
 );
 app.post("/api/login", origin, async (req, res) => {
-  if (!rate("login:" + req.ip, 10, 900000))
+  if (!await rate("login:" + req.ip, 10, 900000))
     return res
       .status(429)
       .json({ error: "Too many attempts. Please try again later." });
@@ -102,15 +104,15 @@ app.post("/api/login", origin, async (req, res) => {
     password.length > 256
   )
     return res.status(400).json({ error: "Enter your email and password." });
-  const a = db
+  const a = await db
     .prepare("SELECT * FROM admins WHERE email=?")
     .get(email.toLowerCase().trim());
   if (!a || !verify(password, a.password))
     return res.status(401).json({ error: "Email or password is incorrect." });
   const token = randomBytes(32).toString("hex"),
     c = randomBytes(24).toString("hex");
-  db.prepare("DELETE FROM sessions WHERE expires<?").run(Date.now());
-  db.prepare("INSERT INTO sessions VALUES(?,?,?,?)").run(
+  await db.prepare("DELETE FROM sessions WHERE expires<?").run(Date.now());
+  await db.prepare("INSERT INTO sessions VALUES(?,?,?,?)").run(
     hashToken(token),
     a.email,
     c,
@@ -122,15 +124,15 @@ app.post("/api/login", origin, async (req, res) => {
   );
   res.json({ email: a.email, csrf: c });
 });
-app.post("/api/logout", gate, origin, csrf, (req, res) => {
-  db.prepare("DELETE FROM sessions WHERE token=?").run(req.session.token);
+app.post("/api/logout", gate, origin, csrf, async (req, res) => {
+  await db.prepare("DELETE FROM sessions WHERE token=?").run(req.session.token);
   res.setHeader(
     "Set-Cookie",
     `e2l=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0${prod ? "; Secure" : ""}`,
   );
   res.json({ ok: true });
 });
-app.put("/api/content/:id", gate, origin, csrf, (req, res) => {
+app.put("/api/content/:id", gate, origin, csrf, async (req, res) => {
   const { value, version } = req.body;
   if (!Number.isInteger(version) || !validateBlock(req.params.id, value))
     return res
@@ -149,7 +151,7 @@ app.put("/api/content/:id", gate, origin, csrf, (req, res) => {
           .json({ error: "That media file is not available for this slot." });
     }
     if (u?.startsWith("/media/")) {
-      const m = db.prepare("SELECT * FROM media WHERE id=?").get(u.slice(7));
+      const m = await db.prepare("SELECT * FROM media WHERE id=?").get(u.slice(7));
       if (!m || (!m.published && m.owner !== req.session.email))
         return res.status(400).json({ error: "Upload is not available." });
       if (
@@ -167,7 +169,7 @@ app.put("/api/content/:id", gate, origin, csrf, (req, res) => {
           .json({ error: "That file does not match this media slot." });
     }
   }
-  const saved = saveBlock(req.params.id, value, version, req.session.email);
+  const saved = await saveBlock(req.params.id, value, version, req.session.email);
   return saved
     ? res.json(saved)
     : res.status(409).json({
@@ -175,6 +177,7 @@ app.put("/api/content/:id", gate, origin, csrf, (req, res) => {
           "Another admin updated this item. Your draft is preserved. Reload the latest version before saving.",
       });
 });
+installChunkUploads(app, { gate, origin, csrf, db, processVideo, sharp });
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 100 * 1024 * 1024, files: 1 },
@@ -184,8 +187,8 @@ app.post(
   gate,
   origin,
   csrf,
-  (req, res, next) => {
-    if (!rate("upload:" + req.session.email, 30, 3600000))
+  async (req, res, next) => {
+    if (!await rate("upload:" + req.session.email, 30, 3600000))
       return res
         .status(429)
         .json({ error: "Upload limit reached. Try again later." });
@@ -235,8 +238,9 @@ app.post(
         ({ buffer, mime, ext, meta } = await processVideo(f.buffer));
       } else throw Error("Use JPG, PNG, WebP, MP4, WebM, or WebVTT files.");
       const id = randomUUID() + "." + ext;
-      writeFileSync(resolve(mediaDir, id), buffer);
-      db.prepare("INSERT INTO media VALUES(?,?,?,?,0,?)").run(
+      if (process.env.NETLIFY) await putMedia(id, buffer);
+      else writeFileSync(resolve(mediaDir, id), buffer);
+      await db.prepare("INSERT INTO media VALUES(?,?,?,?,0,?)").run(
         id,
         id,
         mime,
@@ -251,8 +255,8 @@ app.post(
     }
   },
 );
-app.get("/media/:id", (req, res) => {
-  const m = db.prepare("SELECT * FROM media WHERE id=?").get(req.params.id);
+app.get("/media/:id", async (req, res) => {
+  const m = await db.prepare("SELECT * FROM media WHERE id=?").get(req.params.id);
   if (!m || (!m.published && m.owner !== req.session?.email))
     return res.sendStatus(404);
   res.set({
@@ -261,22 +265,24 @@ app.get("/media/:id", (req, res) => {
       ? "public, max-age=31536000, immutable"
       : "private, no-store",
   });
+  if (process.env.NETLIFY) return sendMedia(req, res, m);
   res.sendFile(resolve(mediaDir, m.path));
 });
-app.delete("/api/upload/:id", gate, origin, csrf, (req, res) => {
-  const m = db
+app.delete("/api/upload/:id", gate, origin, csrf, async (req, res) => {
+  const m = await db
     .prepare("SELECT * FROM media WHERE id=? AND owner=? AND published=0")
     .get(req.params.id, req.session.email);
+  if (m && process.env.NETLIFY) return res.json({ ok: true });
   if (m) {
     try {
       unlinkSync(resolve(mediaDir, m.path));
     } catch {}
-    db.prepare("DELETE FROM media WHERE id=?").run(m.id);
+    await db.prepare("DELETE FROM media WHERE id=?").run(m.id);
   }
   res.json({ ok: true });
 });
 app.post("/api/inquiries", origin, async (req, res) => {
-  if (!rate("inquiry:" + req.ip, 5, 3600000))
+  if (!await rate("inquiry:" + req.ip, 5, 3600000))
     return res.status(429).json({
       code: "inquiryRate",
       error: "Please try again later, or email us directly.",
@@ -311,7 +317,7 @@ app.post("/api/inquiries", origin, async (req, res) => {
       error: "Please enter your name, email, and event type.",
     });
   const id = randomUUID();
-  db.prepare("INSERT INTO inquiries VALUES(?,?,?)").run(
+  await db.prepare("INSERT INTO inquiries VALUES(?,?,?)").run(
     id,
     JSON.stringify(data),
     new Date().toISOString(),
@@ -333,11 +339,11 @@ app.post("/api/inquiries", origin, async (req, res) => {
   }
   res.status(201).json({ ok: true, id });
 });
-app.get("/api/inquiries", gate, (req, res) =>
+app.get("/api/inquiries", gate, async (req, res) =>
   res.json(
-    db
+    (await db
       .prepare("SELECT * FROM inquiries ORDER BY created_at DESC LIMIT 200")
-      .all()
+      .all())
       .map((x) => ({ ...x, payload: JSON.parse(x.payload) })),
   ),
 );
@@ -346,7 +352,9 @@ app.use("/api", (req, res) =>
   res.status(404).json({ error: "Endpoint not found." }),
 );
 app.use("/assets", express.static(resolve("public/assets")));
-if (prod) {
+if (process.env.NETLIFY) {
+  // Netlify serves the Vite build and SPA fallback.
+} else if (prod) {
   app.use(express.static(resolve("dist")));
   app.get("/{*path}", (req, res) => res.sendFile(resolve("dist/index.html")));
 } else {
@@ -367,7 +375,8 @@ app.use((err, req, res, next) => {
   });
 });
 const portArg = process.argv.indexOf("--port");
-app.listen(
+export default app;
+if (!process.env.NETLIFY) app.listen(
   process.env.PORT || (portArg >= 0 ? Number(process.argv[portArg + 1]) : 3000),
   "0.0.0.0",
   () => console.log("Events2Luv server ready"),

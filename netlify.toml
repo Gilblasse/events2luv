@@ -1,0 +1,30 @@
+[build]
+  command = "node scripts/netlify-build.mjs"
+  publish = "dist"
+[build.environment]
+  NODE_VERSION = "24"
+  VITE_NETLIFY_UPLOADS = "true"
+  NETLIFY = "true"
+  NODE_ENV = "production"
+[functions]
+  node_bundler = "esbuild"
+  external_node_modules = ["sharp", "ffmpeg-static", "ffprobe-static", "@netlify/database"]
+  included_files = ["public/assets/**"]
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/api/api/:splat"
+  status = 200
+[[redirects]]
+  from = "/media/*"
+  to = "/.netlify/functions/api/media/:splat"
+  status = 200
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    X-Frame-Options = "DENY"
+    Referrer-Policy = "strict-origin-when-cross-origin"

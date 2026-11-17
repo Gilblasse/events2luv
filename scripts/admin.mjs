@@ -20,10 +20,10 @@ for await (const chunk of process.stdin) {
         console.error("Use at least 14 characters.");
         process.exit(1);
       }
-      db.prepare(
+      await db.prepare(
         "INSERT INTO admins VALUES(?,?) ON CONFLICT(email) DO UPDATE SET password=excluded.password",
       ).run(email, passwordHash(password));
-      db.prepare("DELETE FROM sessions WHERE email=?").run(email);
+      await db.prepare("DELETE FROM sessions WHERE email=?").run(email);
       console.log("Admin account saved. Existing sessions revoked.");
       process.exit(0);
     } else if (c === "\u007f") password = password.slice(0, -1);
