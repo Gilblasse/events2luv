@@ -1,70 +1,94 @@
-# Getting Started with Create React App
+# Events2Luv — The Editorial Story
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+A complete React/Vite site with a Node 24/Express backend, durable SQLite content and inquiry storage, and private-to-public media uploads. The new design is on `feat/editorial-redesign`; it does not change the existing live domain automatically.
 
-## Available Scripts
+## Included
 
-In the project directory, you can run:
+- Homepage, Services, About, FAQs, editorial Gallery and consultation Booking page.
+- Scroll-driven Spark → Details → Moment chapters, sticky imagery, restrained depth, overlapping photographs, lightbox and detail notes.
+- Stacked mobile and reduced-motion gallery, keyboard controls, and focus-managed editing dialogs.
+- Optimized real photographs recovered from the existing website; original source URLs and provenance in `assets/manifest.json`.
+- A silent photo film assembled from existing photographs. It is labeled as a photo film, plays on demand, has native pause controls, and uses a still poster. No invented client events or paid AI generation.
+- Individual admin accounts, inline text/link/image/video editing, all-content search, crop controls including mobile focal points, poster/caption uploads, immediate private draft preview, Save and Cancel.
+- Version checks prevent lost updates; previous saved revisions remain in the database. Uploaded replacements stay private until a successful save. Cancel deletes uncommitted uploads without deleting published files.
+- Consultation requests are durably stored in the admin Requests inbox. Optional SMTP notifications are separate from storage.
 
-### `yarn start`
+## Run locally
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+Requirements: Node **24+**, npm, FFmpeg/FFprobe on PATH.
 
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
+```bash
+npm ci
+npm run dev
+```
 
-### `yarn test`
+Open `http://localhost:3000`. A development server reload is needed after server-side changes.
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+Provision each admin explicitly; the CLI prompts for a hidden password of at least 14 characters:
 
-### `yarn build`
+```bash
+npm run admin -- your-admin@example.com
+```
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+Visit `/admin`. The same command rotates an existing account's password and revokes its sessions. There are no shipped default credentials, public signup, or browser-only permission checks.
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+## Check
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+```bash
+npm run build
+npm test
+```
 
-### `yarn eject`
+Integration checks cover authentication, authorization/CSRF, malicious links, concurrent edits, persistence after restart, private uploads/cancellation/publication, video transcoding and range playback, private consultation requests, and logout. Editor tests exercise Save/Cancel and shared-link preview behavior.
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+## Deploy
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+**GitHub Pages cannot run this backend.** Deploy the included Docker image on a Node/container host with one persistent disk and an HTTPS reverse proxy. Use one application instance; SQLite, local uploads, and in-memory rate limits are intentionally a simple single-instance architecture. Do not use an ephemeral filesystem or multiple independent replicas.
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+```bash
+cp .env.example .env
+# Set APP_ORIGIN to the exact HTTPS origin, without a trailing slash.
+docker compose up --build -d
+docker compose exec website npm run admin -- your-admin@example.com
+```
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
+The Compose configuration binds only `127.0.0.1:3000`. Point an HTTPS reverse proxy at that address. Set `TRUST_PROXY` only for the actual trusted proxy network/topology. Keep the named `events2luv-data` volume across deployments. Never run `docker compose down -v` on production unless you intend to erase its data.
 
-## Learn More
+Required production configuration:
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+| Setting       | Purpose                                                                               |
+| ------------- | ------------------------------------------------------------------------------------- |
+| `APP_ORIGIN`  | Exact public HTTPS origin used for request-origin checks                              |
+| `DATA_DIR`    | Persistent directory containing SQLite and uploaded media; Docker default `/app/data` |
+| `PORT`        | Listener, default 3000                                                                |
+| `TRUST_PROXY` | Optional trusted proxy range for correct client-IP rate limiting                      |
+| `SMTP_URL`    | Optional SMTP transport connection string; keep secret                                |
+| `MAIL_FROM`   | Verified sender used by the mail provider                                             |
+| `INQUIRY_TO`  | Notification recipient; proposed business inbox `events2luv@gmail.com`                |
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+Configure all three mail settings together to enable notifications. A mail failure never loses the request; it remains in the admin inbox. Verify a test notification at the actual business inbox before launch. No live SMTP credentials are included or configured by this build.
 
-### Code Splitting
+The server exposes `/api/health`. Production sessions use Secure, HttpOnly, SameSite=Strict cookies. Do not place it directly on plain HTTP.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+## Media and editing
 
-### Analyzing the Bundle Size
+Images: JPG/PNG/WebP, up to 15 MB and 40 megapixels. They are decoded, orientation-corrected, resized within 3000×3000, and re-encoded as WebP. Videos: MP4/WebM, up to 100 MB, 5 minutes, 4096 pixels per dimension; validated with FFprobe and transcoded to H.264/AAC MP4 within 1920×1080. One video is processed at a time to bound server resource use. Captions: valid WebVTT header, up to 1 MB. Upload routes require an admin session and CSRF token.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+Each editor shows its slot's recommended dimensions. Recommended resolution is guidance rather than a hard rejection threshold. New content overrides are in SQLite; builds never overwrite them. `src/content.js` holds the initial defaults and stable block IDs. Changing an ID after launch would disconnect its saved override, so preserve IDs.
 
-### Making a Progressive Web App
+The “All content” panel exposes copy that isn't directly visible, including placeholders, chapter controls, form error copy and shared links. Save intentionally updates the public site immediately. Cancel affects only the current unsaved draft. No raw HTML is accepted.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+## Backups and recovery
 
-### Advanced Configuration
+Back up the complete persistent data directory (database and media together). Stop the application briefly for a consistent filesystem copy, or use a SQLite-aware online backup with matching media backup. Keep encrypted off-host backups and test restoration. Revisions record prior values, editor and save time; a developer can recover a value from that table and save it through the editor. Published media is retained for recovery.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+## Before moving the public domain
 
-### Deployment
+1. Select a server/container host and persistent storage; the repository is not tied to a paid hosting account.
+2. Set the HTTPS origin, provision the owner's admin account, and test access.
+3. Configure and verify consultation email delivery; the admin inbox already works without email.
+4. Confirm the business's image permissions, service copy, real event stories, and booking process. Existing public-site images are reused, not independently rights-cleared.
+5. Confirm the current domain's deployment/DNS source before replacing it. The GitHub repository previously contained a starter app that differed from the live site.
+6. Exercise the public pages on real mobile devices and test admin editing on the production host; verify a saved edit survives a redeploy with the persistent disk retained.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `yarn build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+No domain/DNS change, paid-host subscription, or production admin credential is part of this commit.

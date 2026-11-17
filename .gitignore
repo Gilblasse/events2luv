@@ -21,3 +21,11 @@
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+/dist/
+/data/
+.env
+.env.*
+!.env.example
+*.sqlite*
+.editor-test-build.mjs
+/assets/original/
