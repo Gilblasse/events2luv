@@ -4,7 +4,13 @@ Reviewed November 16, 2026 (America/Chicago).
 
 ## Recovered work
 
-The existing implementation was recovered intact, not rebuilt. The local branch contained `eb860c8` (editorial website and persistent inline editor), followed by `da9fd8b` (obsolete build-cache removal). GitHub's `feat/editorial-redesign` branch still pointed to starter commit `bb796d6a88e597b7ce76b5dd2fe8c5e03a041a51` at recovery. The reviewed tree is saved to that review branch through the connected GitHub account. The local historical commits are retained locally; the remote review commit contains the complete cleaned tree atop the original main commit.
+The implementation was recovered from `events2luv-recovery.bundle` into a separate `recovered` checkout, preserving the original main checkout and its modified lockfiles. The full START_HERE_CODEX.md and version 3 plan were read. All archive SHA-256 checks passed, and every source snapshot file matched its recovered Git blob (Windows checkout newline conversion accounts for text working-file hash differences).
+
+GitHub's review branch was actually queried and pointed to `bb796d6a88e597b7ce76b5dd2fe8c5e03a041a51`. A normal fast-forward push saved the original history through `5db8df59c1eaed8a58652d70c93cf891c35329f3`. A fresh independent clone from GitHub matched the entire recovered Git tree. This supersedes the earlier uncorroborated claim that a reconstructed remote commit had already saved the implementation. No force-push, main update, domain change or production deployment occurred.
+
+Review branch: https://github.com/Gilblasse/events2luv/tree/feat/editorial-redesign . The follow-up verification commit containing this record updates dependencies and staging guidance. Consult the branch HEAD for its final SHA; the media remains identical to the recovered commit.
+
+Remote film SHA-256: `0e3240a9e2a09840b6a999a31ce2340f5e45886b844135031815a5eab638e7bf`; Git blob `3529cc89693db9005198d237615a56a03a0fa8b5`. FFprobe confirmed H.264, 1280 x 720, 13.6 seconds, 1,743,035 bytes.
 
 The approved `Events2Luv_Redesign_Plan.md`, version 3, was read in full. Its admin and gallery specifications were compared with the recovered source. The public domain and `main` are not deployment targets of this recovery.
 
@@ -12,8 +18,13 @@ The tree excludes `.eslintcache`, build output, dependencies, local paths/metada
 
 ## Checks completed
 
-- Production Vite build: passed.
-- Automated suite: 13 passed, 0 failed.
+- Production Vite build: passed on Windows and inside Docker.
+- Automated suite on final patched code in the Node/FFmpeg container: 13 passed, 0 failed. Windows editor-only run: 3 passed (initial sandbox denial resolved with an authorized rerun).
+- Docker image built successfully, including FFmpeg and production dependencies. The host lacks FFmpeg; the full suite used the container runtime.
+- Local dedicated-volume check passed: saved content, media bytes and private inquiries survived replacement containers and restoration from a stopped-volume backup; SQLite integrity_check returned ok. QA containers were stopped and QA volumes retained. This is not a hosted redeploy or automated off-host-backup test.
+- GitHub Actions on recovered commit `5db8df5`: passed (run 44013016503).
+- Dependency audit initially found two high-severity packages. Updated Nodemailer to 10.6.0 and Sharp to 0.35.5; installation/audit now reports zero known vulnerabilities. Real SMTP delivery remains unverified.
+- Made npm start portable across Windows/Linux and aligned the declared minimum Node version with the locked test dependencies (24.15+). Windows host currently has 24.13.1; use the tested container or upgrade Node for supported native testing.
 - Integration coverage: protected pages/API writes, login and logout, CSRF and request origin, malicious links, stale-version conflicts, durable text/image/video saves after server restart, draft-upload privacy/cancellation/publication, corrupt-upload rejection, video conversion and range playback, private consultation requests, invalid media references, and unauthorized uploads.
 - React interaction coverage: private text preview, Save, Cancel, remount persistence, Cancel after Save, shared-link preview/reversion, failed Save preserving the draft and successful retry.
 - `git diff --check`: passed.
@@ -29,9 +40,9 @@ A public request without admin cookies reads the same saved content after restar
 
 ## Verification limits and launch blockers
 
-The connected browser could not reach the workspace preview URL (connection refused). No desktop/mobile screenshot, actual touch/keyboard browser pass, reduced-motion browser pass, or working hosted preview is claimed for this recovery. The source includes responsive and reduced-motion layouts, stable editing mode, crop controls, and native video controls; they still need a browser pass on the staging host.
+The local development server starts at http://localhost:3000. The Playwright tool returned an approval-policy denial; the fallback browser access host was unavailable. No desktop/mobile screenshot, actual touch/keyboard browser pass, reduced-motion browser pass, physical second-device test, or hosted preview is claimed. The source includes these layouts and controls, but they still need a real browser acceptance pass.
 
-No Docker runtime is available here, so the Docker image itself has not been built in this workspace. The Node production build and backend were exercised by the integration suite.
+Docker Desktop was started and the image was built and tested locally. No suitable hosted account is confirmed. The user requires all work to be free and explicitly requested retaining Node/SQLite. No purchase or paid deployment was made. See [STAGING.md](STAGING.md) for a zero-subscription local staging setup and optional free HTTPS tunnel, owner inputs, and remaining verification steps.
 
 Before launch:
 

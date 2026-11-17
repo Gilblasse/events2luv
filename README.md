@@ -15,7 +15,7 @@ A complete React/Vite site with a Node 24/Express backend, durable SQLite conten
 
 ## Run locally
 
-Requirements: Node **24+**, npm, FFmpeg/FFprobe on PATH.
+Requirements: Node **24.15+** (latest Node 24 LTS recommended), npm, FFmpeg/FFprobe on PATH. The container includes these requirements; Windows users can use Docker for the full integration suite.
 
 ```bash
 npm ci
@@ -42,6 +42,8 @@ npm test
 Integration checks cover authentication, authorization/CSRF, malicious links, concurrent edits, persistence after restart, private uploads/cancellation/publication, video transcoding and range playback, private consultation requests, and logout. Editor tests exercise Save/Cancel and shared-link preview behavior.
 
 ## Deploy
+
+See [the free staging setup guide](docs/STAGING.md) for persistent local Docker storage, an optional free HTTPS preview tunnel, and acceptance checks. The owner requires $0 service fees. No hosting purchase or live-domain cutover has been made.
 
 **GitHub Pages cannot run this backend.** Deploy the included Docker image on a Node/container host with one persistent disk and an HTTPS reverse proxy. Use one application instance; SQLite, local uploads, and in-memory rate limits are intentionally a simple single-instance architecture. Do not use an ephemeral filesystem or multiple independent replicas.
 
