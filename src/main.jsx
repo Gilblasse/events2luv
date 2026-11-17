@@ -665,7 +665,7 @@ function Editor() {
       });
       c.setRecords({ ...c.records, [c.selected]: r });
       c.close(true);
-      c.setToast("Your changes are saved.");
+      c.setToast(r.warning || "Your changes are saved.");
     } catch (e) {
       setError(e.message);
     } finally {
@@ -853,7 +853,7 @@ function Editor() {
                     "Discard this draft and load the latest saved version?",
                   )
                 ) {
-                  const all = await request("/api/content");
+                  const all = await request("/api/admin/content");
                   c.setRecords(all);
                   c.setDraft(
                     structuredClone(

@@ -17,11 +17,11 @@ The owner requires $0 hosting. The Netlify team was switched from Legacy Starter
 
 ## Finish deployment
 
-1. Complete the Netlify GitHub authorization in the browser, then import `Gilblasse/events2luv`, branch `deploy/netlify-free` into a new project.
+1. GitHub authorization and project creation are complete: `events2luv` imports `deploy/netlify-free` at https://app.netlify.com/projects/events2luv. The first hosted build exposed a legacy Lambda/CJS bundling error; the native Functions wrapper and production-only server build resolve it in local packaging validation.
 2. Retain repository build settings; do not set NODE_ENV=production for dependency installation, because Vite is a build-time dependency.
-3. Provision Netlify Database on the Free plan. Verify its environment is available to functions. No existing production SQLite records were migrated; none were provided in this workspace.
+3. Netlify Database was automatically provisioned. Verify its environment is available to functions. No existing production SQLite records were migrated; none were provided in this workspace.
 4. Set the project function origin explicitly if required. The handler uses Netlify's DEPLOY_PRIME_URL/URL. Do not put database connection strings or admin passwords in Git.
-5. Provision the owner's admin using `scripts/admin.mjs` in an authenticated Netlify environment with NETLIFY=true and the project database variables. Password is read from hidden stdin. User must choose and enter their own password.
+5. Provision the first admin by setting `E2L_ADMIN_EMAIL` and `E2L_ADMIN_PASSWORD` in Netlify's environment settings, then deploy. The password must be 14–256 characters. The build stores only its salted scrypt hash; it never resets an existing admin. Remove both bootstrap variables after successful creation and deploy again. The owner should enter their password directly in Netlify, never in Git or chat. The existing `scripts/admin.mjs` CLI remains available in an authenticated database environment.
 6. Test the generated HTTPS URL: all public routes, admin authentication, CSRF, Save/Cancel, conflicting edits, private uploads, published images, captions, video range playback, inquiry submission and inbox.
 7. Redeploy and verify saved changes, media, inquiry inbox and admin access survive.
 8. Only after acceptance, merge the migration, configure the project's production branch as main, add events2luv.com, and change DNS to the exact records Netlify provides. Preserve mail-related DNS records.
@@ -34,5 +34,5 @@ Production Vite build passes. Fifteen tests pass: the original 13 UI/integration
 
 - Validate the real function bundle against Netlify's size/time limits and test a representative full-size upload.
 - Provide cleanup of expired unfinished upload chunks and rate-limit entries (currently not automatically removed).
-- Measure database wake time/credits on typical traffic and add public-content caching if necessary; every uncached content request currently reaches the database.
+- Verify public-content CDN caching and cache purge after Save on the hosted site. Public content now uses a one-day durable cache; private admin content remains uncached. This prevents ordinary page visits from continually waking PostgreSQL.
 - Verify inquiry email delivery separately if SMTP notifications are configured. The saved inbox works independently of SMTP.

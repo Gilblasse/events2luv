@@ -1,4 +1,5 @@
 import express from "express";
+import { purgeCache } from "@netlify/cache";
 import { putMedia, sendMedia, removeMedia, installChunkUploads } from "./netlify-media.mjs";
 import { processVideo } from "./video.mjs";
 import multer from "multer";
@@ -36,6 +37,8 @@ app.use((req, res, next) => {
 });
 app.use(express.json({ limit: "100kb" }));
 app.use(async (req, res, next) => {
+  // Published content is identical for every visitor and safe to cache publicly.
+  if (req.method === 'GET' && req.path === '/api/content') return next();
   let token;
   try {
     token = decodeURIComponent(
@@ -86,7 +89,15 @@ app.use("/api", (req, res, next) => {
   res.set("Cache-Control", "no-store");
   next();
 });
-app.get("/api/content", async (req, res) => res.json(await allBlocks()));
+app.get("/api/content", async (req, res) => {
+  const blocks = await allBlocks();
+  if (process.env.NETLIFY) res.set({
+    'Netlify-CDN-Cache-Control': 'public, durable, max-age=86400',
+    'Netlify-Cache-Tag': 'events2luv-content',
+  });
+  res.json(blocks);
+});
+app.get("/api/admin/content", gate, async (req, res) => res.json(await allBlocks()));
 app.get("/api/session", (req, res) =>
   res.json(
     req.session ? { email: req.session.email, csrf: req.session.csrf } : {},
@@ -170,6 +181,13 @@ app.put("/api/content/:id", gate, origin, csrf, async (req, res) => {
     }
   }
   const saved = await saveBlock(req.params.id, value, version, req.session.email);
+  if (saved && process.env.NETLIFY) {
+    try { await purgeCache({tags:['events2luv-content']}); }
+    catch {
+      console.error('Content saved; public cache refresh failed.');
+      saved.warning = 'Your changes are saved, but public refresh is delayed. Redeploy the site to refresh it immediately.';
+    }
+  }
   return saved
     ? res.json(saved)
     : res.status(409).json({
