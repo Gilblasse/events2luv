@@ -272,7 +272,11 @@ app.delete("/api/upload/:id", gate, origin, csrf, async (req, res) => {
   const m = await db
     .prepare("SELECT * FROM media WHERE id=? AND owner=? AND published=0")
     .get(req.params.id, req.session.email);
-  if (m && process.env.NETLIFY) return res.json({ ok: true });
+  if (m && process.env.NETLIFY) {
+    const deleted = await db.prepare("DELETE FROM media WHERE id=? AND owner=? AND published=0 RETURNING id").get(m.id, req.session.email);
+    if (deleted) await removeMedia(m.id);
+    return res.json({ ok: true });
+  }
   if (m) {
     try {
       unlinkSync(resolve(mediaDir, m.path));

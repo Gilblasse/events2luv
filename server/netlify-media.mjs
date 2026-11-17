@@ -3,17 +3,17 @@ import { getStore } from '@netlify/blobs';
 import { randomUUID } from 'node:crypto';
 const CHUNK = 2 * 1024 * 1024;
 const store = () => getStore({ name: 'events2luv-media', consistency: 'strong' });
-export async function putMedia(id,buffer) {
-  for(let i=0;i<buffer.length;i+=CHUNK) await store().set(`${id}/${i/CHUNK}`,buffer.subarray(i,i+CHUNK));
-  await store().setJSON(`${id}/meta`,{size:buffer.length});
+export async function putMedia(id,buffer,storage=store()) {
+  for(let i=0;i<buffer.length;i+=CHUNK) await storage.set(`${id}/${i/CHUNK}`,buffer.subarray(i,i+CHUNK));
+  await storage.setJSON(`${id}/meta`,{size:buffer.length});
 }
-export async function removeMedia(id) {
-  const m=await store().get(`${id}/meta`,{type:'json'});
-  if(m) for(let i=0;i<Math.ceil(m.size/CHUNK);i++) await store().delete(`${id}/${i}`);
-  await store().delete(`${id}/meta`);
+export async function removeMedia(id,storage=store()) {
+  const m=await storage.get(`${id}/meta`,{type:'json'});
+  if(m) for(let i=0;i<Math.ceil(m.size/CHUNK);i++) await storage.delete(`${id}/${i}`);
+  await storage.delete(`${id}/meta`);
 }
-export async function sendMedia(req,res,m) {
-  const meta=await store().get(`${m.id}/meta`,{type:'json'});
+export async function sendMedia(req,res,m,storage=store()) {
+  const meta=await storage.get(`${m.id}/meta`,{type:'json'});
   if(!meta) return res.sendStatus(404);
   const range=req.headers.range;
   let start=0,end=meta.size-1;
@@ -31,7 +31,7 @@ export async function sendMedia(req,res,m) {
   }
   const pieces=[];
   for(let i=Math.floor(start/CHUNK);i<=Math.floor(end/CHUNK);i++) {
-    const b=await store().get(`${m.id}/${i}`,{type:'arrayBuffer'});
+    const b=await storage.get(`${m.id}/${i}`,{type:'arrayBuffer'});
     if(!b)return res.sendStatus(404);
     pieces.push(Buffer.from(b).subarray(Math.max(0,start-i*CHUNK),Math.min(CHUNK,end-i*CHUNK+1)));
   }

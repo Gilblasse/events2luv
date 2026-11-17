@@ -5,7 +5,6 @@
   NODE_VERSION = "24"
   VITE_NETLIFY_UPLOADS = "true"
   NETLIFY = "true"
-  NODE_ENV = "production"
 [functions]
   node_bundler = "esbuild"
   external_node_modules = ["sharp", "ffmpeg-static", "ffprobe-static", "@netlify/database"]

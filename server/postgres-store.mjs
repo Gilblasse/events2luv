@@ -1,8 +1,10 @@
 import { getDatabase } from '@netlify/database';
 export { verify, hashToken, passwordHash } from './password.mjs';
 export const dataDir = '/tmp/events2luv';
+let cachedPool;
+const defaultPool = () => (cachedPool ??= getDatabase().pool);
+export function createPostgresStore(pool) {
 let ready;
-const pool = () => getDatabase().pool;
 const schema = `
 CREATE TABLE IF NOT EXISTS blocks(id TEXT PRIMARY KEY,value TEXT NOT NULL,version INTEGER NOT NULL DEFAULT 1,updated_at TEXT,editor TEXT);
 CREATE TABLE IF NOT EXISTS admins(email TEXT PRIMARY KEY,password TEXT NOT NULL);
@@ -17,14 +19,14 @@ async function init() {
   await ready;
 }
 function parameters(sql) { let n = 0; return sql.replace(/\?/g, () => '$' + ++n); }
-export const db = { prepare(sql) {
+const db = { prepare(sql) {
   const run = async (...values) => { await init(); return pool().query(parameters(sql), values); };
   return { run, get: async (...v) => (await run(...v)).rows[0], all: async (...v) => (await run(...v)).rows };
 }};
-export async function allBlocks() {
+async function allBlocks() {
   return Object.fromEntries((await db.prepare('SELECT * FROM blocks').all()).map(r => [r.id,{value:JSON.parse(r.value),version:r.version}]));
 }
-export async function saveBlock(id,value,version,email) {
+async function saveBlock(id,value,version,email) {
   await init();
   const client = await pool().connect();
   try {
@@ -45,7 +47,7 @@ export async function saveBlock(id,value,version,email) {
   } catch(e) { await client.query('ROLLBACK'); throw e; }
   finally { client.release(); }
 }
-export async function rate(key,max,window) {
+async function rate(key,max,window) {
   await init();
   const now=Date.now();
   const {rows} = await pool().query(`INSERT INTO rate_limits VALUES($1,1,$2)
@@ -53,3 +55,7 @@ export async function rate(key,max,window) {
     expires=CASE WHEN rate_limits.expires<$3 THEN $2 ELSE rate_limits.expires END RETURNING count`,[key,now+window,now]);
   return rows[0].count<=max;
 }
+
+return { db, allBlocks, saveBlock, rate };
+}
+export const { db, allBlocks, saveBlock, rate } = createPostgresStore(defaultPool);
