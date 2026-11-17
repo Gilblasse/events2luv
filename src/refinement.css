@@ -1,0 +1,577 @@
+/* Ivory / plum / champagne, with the existing Cormorant and DM Sans voices.
+   The photographs change composition; text has a quiet, reserved reading area. */
+.section {
+  padding-top: 5rem;
+  padding-bottom: 5rem;
+}
+footer > div > a:last-child {
+  color: #675850;
+}
+.hero > .image img {
+  animation: none;
+}
+.hero {
+  min-height: 610px;
+  max-height: 850px;
+}
+.hero-content {
+  padding-top: 12vh;
+  max-width: 920px;
+}
+.hero h1 {
+  font-size: clamp(4.2rem, 6.6vw, 6.8rem);
+}
+.hero-content::after {
+  content: "";
+  display: block;
+  width: 1px;
+  height: 48px;
+  background: #f8f4ee88;
+  margin-top: 2.4rem;
+}
+.hero:after {
+  background: linear-gradient(90deg, #201a16b8, #201a1645 53%, transparent 84%);
+}
+.hero-content .italic {
+  color: #fff5ec;
+}
+.services-summary .services-grid {
+  gap: 3.2rem;
+  border-top: 1px solid #cdbeb3;
+  padding-top: 2rem;
+}
+.services-summary .services-grid article {
+  padding-top: 0;
+}
+.services-summary .services-grid h3 {
+  margin-top: 0;
+}
+.services-full .services-grid {
+  display: block;
+}
+.services-full .services-grid article {
+  display: grid;
+  grid-template-columns: 40% 1fr;
+  column-gap: 8%;
+  padding: 2.5rem 0;
+  border-top: 1px solid #d2c3b5;
+}
+.services-full .services-grid .image {
+  grid-row: 1 / 5;
+  height: 360px;
+}
+.services-full .services-grid article > .text {
+  grid-column: 2;
+}
+.services-full .services-grid h3 {
+  margin-top: 0;
+}
+.services-full .services-grid p {
+  max-width: 560px;
+}
+.services-full .text-link {
+  justify-self: start;
+  align-self: start;
+}
+.about {
+  gap: 9%;
+}
+.about h1 {
+  font-size: clamp(3rem, 5vw, 5.4rem);
+  margin-bottom: 1.7rem;
+}
+.about-depth {
+  margin-top: 2rem;
+}
+.about-depth h2 {
+  font-size: 2.3rem;
+  margin-bottom: 1rem;
+}
+.about > .image {
+  height: auto;
+  aspect-ratio: 1143 / 1626;
+}
+.about img {
+  height: 100%;
+  filter: none;
+}
+.about > .image:before {
+  display: none;
+}
+.process {
+  padding-top: 3rem;
+}
+.steps > div {
+  align-items: flex-start;
+}
+.steps h3 {
+  font-size: 1.7rem;
+  letter-spacing: -0.02em;
+  margin-bottom: 0.8rem;
+}
+.steps p {
+  font-size: 0.88rem;
+  line-height: 1.8;
+}
+.cta {
+  padding: 4.5rem 7.5%;
+  background: #4a253b;
+}
+.cta h2 {
+  max-width: 700px;
+  font-style: normal;
+}
+.cta p {
+  max-width: 500px;
+  color: #eee0e6;
+  margin-top: 1.2rem;
+}
+.gallery-intro {
+  padding-top: 3.5rem;
+  padding-bottom: 2.6rem;
+  text-align: left;
+}
+.gallery-intro .eyebrow {
+  margin-bottom: 1rem;
+}
+.gallery-intro > .text {
+  margin-left: 0;
+}
+.gallery-intro h1 {
+  font-size: clamp(3.3rem, 5.5vw, 5.5rem);
+  font-style: normal;
+}
+.gallery-intro > .text:has(h1) {
+  margin-bottom: 1rem;
+}
+.narrative {
+  background: #eee6dc;
+}
+.narrative-intro {
+  display: grid;
+  grid-template-columns: 1.25fr 1fr;
+  align-items: end;
+  gap: 12%;
+  padding-bottom: 2rem;
+}
+.narrative-intro h2 {
+  max-width: 600px;
+}
+.narrative-intro > .text:has(h2) {
+  margin: 0;
+}
+.narrative-stage {
+  padding: 1.4rem 7.5% 3rem;
+}
+.story-navigation {
+  display: flex;
+  gap: 2.5rem;
+  padding: 0.2rem 0 1.2rem;
+  border-bottom: 1px solid #cdbeb3;
+}
+.story-navigation a {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 44px;
+  font-size: 0.85rem;
+  color: #68565c;
+}
+.story-navigation a[aria-current] {
+  color: var(--plum);
+  text-decoration: underline;
+  text-underline-offset: 7px;
+}
+.story-navigation a span {
+  font-family: "Cormorant Garamond", Georgia, serif;
+  font-size: 1.3rem;
+}
+.narrative-panel {
+  display: grid;
+  grid-template-columns: 56% 36%;
+  gap: 8%;
+  align-items: center;
+  padding: 2rem 0;
+  scroll-margin-top: 2rem;
+}
+.narrative-photo {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+}
+.narrative-photo > .image {
+  height: 100%;
+}
+.narrative-photo img {
+  height: 100%;
+  width: 100%;
+}
+.narrative-caption {
+  min-width: 0;
+  max-width: 440px;
+}
+.narrative-caption h2 {
+  font-size: clamp(2.5rem, 3.9vw, 4.2rem);
+}
+.narrative-caption p {
+  margin-top: 1.4rem;
+  font-size: 0.95rem;
+  line-height: 1.8;
+}
+.chapter-number {
+  display: block;
+  font-size: 0.75rem;
+  color: #6d575b;
+  margin-bottom: 1.5rem;
+  letter-spacing: 0.1em;
+}
+.composition-0 .narrative-photo {
+  height: min(66vh, 620px);
+  width: 80%;
+  justify-self: center;
+}
+.composition-1 {
+  grid-template-columns: 34% 58%;
+}
+.composition-1 .narrative-photo {
+  grid-column: 2;
+  grid-row: 1;
+  height: min(58vh, 560px);
+}
+.composition-1 .narrative-caption {
+  grid-column: 1;
+  grid-row: 1;
+}
+.composition-2 .narrative-photo {
+  height: min(72vh, 670px);
+  width: 82%;
+  justify-self: center;
+}
+.composition-2 .narrative-photo img {
+  object-fit: contain;
+}
+.home-narrative .composition-0 .narrative-photo {
+  width: 100%;
+  height: min(53vh, 480px);
+}
+.photo-enlarge {
+  position: absolute;
+  right: 1rem;
+  bottom: 1rem;
+  padding: 0.85rem 1rem;
+  background: #f8f4eef2;
+  color: var(--plum);
+  font-size: 0.78rem;
+  min-height: 44px;
+}
+.is-directed .narrative-stage {
+  height: 100svh;
+  padding-top: 1rem;
+  padding-bottom: 1.8rem;
+  overflow: hidden;
+}
+.is-directed .narrative-panels {
+  position: relative;
+  height: calc(100% - 65px);
+}
+.is-directed .narrative-panel {
+  position: absolute;
+  inset: 0;
+  padding: 1.5rem 0 0;
+}
+.is-directed .narrative-photo {
+  max-height: calc(100svh - 130px);
+}
+.is-editing .narrative-panel {
+  position: relative;
+}
+.is-editing .narrative-caption .can-edit {
+  margin-bottom: 1.2rem;
+}
+.collection-grid {
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr 1fr;
+  gap: 2.5rem;
+  margin: 2.5rem 0;
+  align-items: start;
+}
+.collection-grid figure {
+  margin: 0;
+  min-width: 0;
+}
+.collection-grid figure:nth-child(2) {
+  margin-top: 4rem;
+}
+.collection-grid figure:nth-child(3) {
+  margin-top: 1.5rem;
+}
+.collection-grid .image {
+  aspect-ratio: 4 / 5;
+}
+.collection-grid figure:nth-child(3) .image {
+  aspect-ratio: 4 / 3;
+}
+.collection-grid img {
+  height: 100%;
+}
+.collection-grid figcaption p {
+  font-size: 0.86rem;
+  margin-top: 1rem;
+}
+.collection-grid .text-link {
+  margin-top: 0.7rem;
+}
+.collection .fineprint {
+  max-width: 680px;
+}
+.lightbox {
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  width: 100vw;
+  height: 100dvh;
+}
+.lightbox button {
+  min-height: 44px;
+}
+.form-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.form-grid > *,
+.booking form {
+  min-width: 0;
+}
+.booking input::placeholder,
+.booking textarea::placeholder {
+  color: #74636a;
+  font-size: 0.88rem;
+}
+.booking-art > .image:first-child {
+  height: 480px;
+}
+@media (max-width: 999px),
+  (max-height: 649px),
+  (prefers-reduced-motion: reduce) {
+  .narrative-panel {
+    min-height: 0;
+    margin: 1rem 0 2rem;
+  }
+  .narrative-photo {
+    max-height: 620px;
+  }
+  .narrative-caption h2 {
+    font-size: 2.9rem;
+  }
+}
+@media (min-width: 761px) and (max-width: 999px) {
+  .narrative-panel .narrative-photo {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 3 / 4;
+  }
+  .composition-1 .narrative-photo,
+  .home-narrative .composition-0 .narrative-photo {
+    aspect-ratio: 4 / 3;
+  }
+  .composition-2 .narrative-photo {
+    aspect-ratio: 1242 / 1789;
+  }
+}
+@media (max-width: 760px) {
+  .section {
+    padding-top: 3rem;
+    padding-bottom: 3rem;
+  }
+  .hero {
+    height: auto;
+    min-height: 630px;
+    max-height: none;
+  }
+  .hero-content {
+    padding: 3.6rem 7% 3rem;
+  }
+  .hero h1 {
+    font-size: clamp(3.3rem, 11.5vw, 4.8rem);
+  }
+  .hero-content p {
+    max-width: 320px;
+    font-size: 0.92rem;
+    margin-top: 1.4rem;
+  }
+  .hero:after {
+    background:
+      linear-gradient(90deg, #201a16b8, #201a1640),
+      linear-gradient(0deg, #201a1670, transparent 70%);
+  }
+  .hero-actions {
+    align-items: flex-start;
+    gap: 1.25rem;
+    margin-top: 1.7rem;
+  }
+  .hero-content::after {
+    margin-top: 2rem;
+    height: 32px;
+  }
+  .services-summary .services-grid {
+    gap: 2rem;
+  }
+  .services-full .services-grid article {
+    display: block;
+    padding: 2rem 0;
+  }
+  .services-full .services-grid .image {
+    height: 300px;
+    margin-bottom: 1.6rem;
+  }
+  .services-full .services-grid p {
+    margin-top: 0.8rem;
+  }
+  .about {
+    gap: 2rem;
+  }
+  .about > .image {
+    width: min(90%, 350px);
+    margin: 0 auto;
+    height: auto;
+  }
+  .about h1 {
+    font-size: 3rem;
+  }
+  .steps {
+    gap: 2rem;
+    margin-top: 2rem;
+    padding-top: 2rem;
+  }
+  .steps > div {
+    gap: 1rem;
+  }
+  .cta {
+    padding: 3rem 7%;
+    gap: 1.7rem;
+    align-items: flex-start;
+  }
+  .cta h2 {
+    font-size: 2.9rem;
+  }
+  .gallery-intro {
+    padding: 2rem 7% 1.6rem;
+  }
+  .gallery-intro .eyebrow {
+    font-size: 0.6rem;
+    margin-bottom: 0.7rem;
+  }
+  .gallery-intro h1 {
+    font-size: 3rem;
+  }
+  .gallery-intro p {
+    font-size: 0.88rem;
+    line-height: 1.7;
+  }
+  .gallery-intro > .text:has(h1) {
+    margin-bottom: 0.7rem;
+  }
+  .narrative-intro {
+    display: block;
+    padding-bottom: 1.5rem;
+  }
+  .narrative-intro p {
+    margin-top: 1.1rem;
+  }
+  .narrative-stage {
+    padding: 0.5rem 7% 1.5rem;
+  }
+  .story-navigation {
+    gap: 0;
+    justify-content: space-between;
+    padding-bottom: 0.5rem;
+  }
+  .story-navigation a {
+    gap: 0.3rem;
+    font-size: 0.72rem;
+  }
+  .story-navigation a span {
+    font-size: 1rem;
+  }
+  .narrative-panel,
+  .composition-1 {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1.4rem;
+    padding: 1.2rem 0;
+    margin: 0 0 2rem;
+  }
+  .narrative-panel .narrative-photo {
+    height: auto;
+    width: 100%;
+    aspect-ratio: 4 / 5;
+  }
+  .composition-1 .narrative-photo {
+    aspect-ratio: 4 / 3;
+  }
+  .composition-2 .narrative-photo {
+    aspect-ratio: 1242 / 1789;
+  }
+  .home-narrative .composition-0 .narrative-photo {
+    height: auto;
+    aspect-ratio: 4 / 3;
+  }
+  .narrative-caption h2 {
+    font-size: 2.6rem;
+  }
+  .narrative-caption p {
+    font-size: 0.9rem;
+    margin-top: 1rem;
+  }
+  .chapter-number {
+    margin-bottom: 0.8rem;
+  }
+  .collection-grid {
+    grid-template-columns: 1fr;
+    gap: 2.2rem;
+    margin-top: 1.5rem;
+  }
+  .collection-grid figure:nth-child(n) {
+    margin: 0;
+  }
+  .collection-grid .image {
+    aspect-ratio: 4 / 3;
+  }
+  .collection-grid figure:nth-child(2) {
+    width: 86%;
+    justify-self: center;
+  }
+  .collection-grid figure:nth-child(2) .image {
+    aspect-ratio: 1;
+  }
+  .form-grid {
+    grid-template-columns: 1fr;
+    gap: 1.3rem;
+  }
+  .booking form label {
+    font-size: 0.85rem;
+  }
+  .booking .check {
+    font-size: 0.8rem;
+    min-height: 44px;
+  }
+  .booking .check input {
+    width: 20px;
+    height: 20px;
+  }
+  .booking-art {
+    display: none;
+  }
+  .booking {
+    margin-bottom: 2rem;
+  }
+  .submit {
+    white-space: normal;
+  }
+  .adminbar button {
+    min-height: 44px;
+  }
+  .is-editing .booking-art {
+    display: block;
+  }
+}

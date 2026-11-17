@@ -31,3 +31,6 @@ yarn-error.log*
 /assets/original/
 
 .eslintcache
+/artifacts/
+/test-results/
+/playwright-report/

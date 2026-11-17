@@ -1,14 +1,14 @@
 # Events2Luv — The Editorial Story
 
-A complete React/Vite site with a Node 24/Express backend, durable SQLite content and inquiry storage, and private-to-public media uploads. The new design is on `feat/editorial-redesign`; it does not change the existing live domain automatically.
+A complete React/Vite site with a Node 24/Express backend, durable SQLite content and inquiry storage, and private-to-public media uploads. The refinement is on `feat/immersive-story-refinement`, based on `feat/editorial-redesign`; it does not change the existing live domain automatically. See [the refinement review](docs/REFINEMENT_REVIEW.md) for before/after screenshots, test results, Lighthouse measurements and photography gaps.
 
 ## Included
 
 - Homepage, Services, About, FAQs, editorial Gallery and consultation Booking page.
-- Scroll-driven Spark → Details → Moment chapters, sticky imagery, restrained depth, overlapping photographs, lightbox and detail notes.
+- GSAP/ScrollTrigger Spark → Details → Moment sequences on Home and Gallery, distinct compositions, separated caption timing, direct chapter navigation and an accessible lightbox.
 - Stacked mobile and reduced-motion gallery, keyboard controls, and focus-managed editing dialogs.
 - Optimized real photographs recovered from the existing website; original source URLs and provenance in `assets/manifest.json`.
-- A silent photo film assembled from existing photographs. It is labeled as a photo film, plays on demand, has native pause controls, and uses a still poster. No invented client events or paid AI generation.
+- The original silent photo montage is retained in the admin archive and All content, with playback controls and editable poster/captions; it is no longer repeated in the public gallery. No invented client events or paid AI generation.
 - Individual admin accounts, inline text/link/image/video editing, all-content search, crop controls including mobile focal points, poster/caption uploads, immediate private draft preview, Save and Cancel.
 - Version checks prevent lost updates; previous saved revisions remain in the database. Uploaded replacements stay private until a successful save. Cancel deletes uncommitted uploads without deleting published files.
 - Consultation requests are durably stored in the admin Requests inbox. Optional SMTP notifications are separate from storage.

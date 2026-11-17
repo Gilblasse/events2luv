@@ -8,6 +8,9 @@ import React, {
 import { createRoot } from "react-dom/client";
 import { content as defaults, mediaSpecs } from "./content.js";
 import "./style.css";
+import "./refinement.css";
+import { useStoryMotion } from "./useStoryMotion.js";
+import { responsiveImages } from "./responsiveImages.js";
 const C = createContext();
 async function request(url, options = {}) {
   const r = await fetch(url, {
@@ -36,6 +39,9 @@ function useModal(active, onClose) {
     last.current = document.activeElement;
     const modal = document.querySelector(".drawer,.lightbox,.inbox");
     if (!modal) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    if (modal.tagName === "DIALOG" && !modal.open) modal.showModal();
     const nodes = () =>
       [
         ...modal.querySelectorAll(
@@ -64,11 +70,13 @@ function useModal(active, onClose) {
     document.addEventListener("keydown", key);
     return () => {
       document.removeEventListener("keydown", key);
+      document.body.style.overflow = previousOverflow;
+      if (modal.tagName === "DIALOG" && modal.open) modal.close();
       last.current?.focus();
     };
   }, [active]);
 }
-function E({ id, as = "span", className = "" }) {
+function E({ id, as = "span", className = "", priority = false }) {
   const c = useContext(C),
     v = c.values[id] || defaults[id];
   const Tag = as;
@@ -96,7 +104,7 @@ function E({ id, as = "span", className = "" }) {
         src={v.src}
         poster={v.poster}
         controls
-        preload="metadata"
+        preload="none"
       >
         {v.captions && (
           <track
@@ -115,12 +123,18 @@ function E({ id, as = "span", className = "" }) {
     node = (
       <img
         src={v.src}
+        srcSet={responsiveImages[v.src]?.srcSet}
+        sizes={id === "hero" ? "100vw" : "(max-width: 760px) 90vw, 60vw"}
+        width={responsiveImages[v.src]?.width}
+        height={responsiveImages[v.src]?.height}
         alt={v.alt}
         style={{
           "--focus": `${v.x}% ${v.y}%`,
           "--focus-mobile": `${v.mobileX ?? v.x}% ${v.mobileY ?? v.y}%`,
         }}
-        loading={id === "hero" ? "eager" : "lazy"}
+        loading={id === "hero" || priority ? "eager" : "lazy"}
+        fetchPriority={id === "hero" || priority ? "high" : "auto"}
+        decoding="async"
       />
     );
   return (
@@ -157,7 +171,15 @@ function Header() {
         ))}
         <E id="navBook" className="button" />
       </nav>
-      <details className="mobile-nav">
+      <details
+        className="mobile-nav"
+        onKeyDown={(e) => {
+          if (e.key === "Escape") {
+            e.currentTarget.open = false;
+            e.currentTarget.querySelector("summary")?.focus();
+          }
+        }}
+      >
         <summary>
           <E id="menuLabel" />
         </summary>
@@ -173,16 +195,25 @@ function Header() {
 function CTA() {
   return (
     <section className="cta">
-      <E id="ctaTitle" as="h2" />
+      <div>
+        <E id="ctaTitle" as="h2" />
+        <E id="ctaCopy" as="p" />
+      </div>
       <E id="ctaBook" className="button light" />
     </section>
   );
 }
-function Services() {
+function Services({ full = false }) {
   return (
-    <section className="section">
+    <section
+      className={`section services ${full ? "services-full" : "services-summary"}`}
+    >
       <E id="servicesEye" className="eyebrow" />
-      <E id="servicesTitle" as="h2" />
+      <E
+        id={full ? "servicesPageTitle" : "servicesTitle"}
+        as={full ? "h1" : "h2"}
+      />
+      {full && <E id="servicesPageCopy" as="p" />}
       <div className="services-grid">
         {[
           ["wedding", "weddings"],
@@ -190,9 +221,10 @@ function Services() {
           ["gathering", "gatherings"],
         ].map(([img, key]) => (
           <article key={key}>
-            <E id={img} />
+            {full && <E id={img} />}
             <E id={key + "Title"} as="h3" />
             <E id={key + "Copy"} as="p" />
+            {full && <E id={key + "More"} as="p" />}
             <E id={key + "Link"} className="text-link" />
           </article>
         ))}
@@ -200,76 +232,149 @@ function Services() {
     </section>
   );
 }
-function About() {
+function About({ full = false }) {
   return (
     <section className="about section">
       <E id="founder" />
       <div>
         <E id="aboutEye" className="eyebrow" />
-        <E id="aboutTitle" as="h2" />
+        <E
+          id={full ? "aboutPageTitle" : "aboutTitle"}
+          as={full ? "h1" : "h2"}
+        />
         <E id="aboutCopy" as="p" />
         <E id="aboutLocal" as="p" />
+        {full && (
+          <div className="about-depth">
+            <E id="aboutApproachTitle" as="h2" />
+            <E id="aboutApproach" as="p" />
+            <E id="aboutConversation" as="p" />
+          </div>
+        )}
         <E id="aboutBook" className="text-link" />
+      </div>
+    </section>
+  );
+}
+function Narrative({ home = false, onZoom }) {
+  const c = useContext(C),
+    ref = useRef(null);
+  const chapters = ["spark", "details", "moment"];
+  const photos = home ? ["homeDetail", "homeSetting", "moment"] : chapters;
+  const contentKey = JSON.stringify(c.values);
+  const { active, go } = useStoryMotion(ref, c.editing, contentKey);
+  useEffect(() => {
+    const navigate = () => {
+      const index = chapters.indexOf(location.hash.slice(1));
+      if (index >= 0) go(index);
+    };
+    addEventListener("hashchange", navigate);
+    return () => {
+      removeEventListener("hashchange", navigate);
+    };
+  }, [c.editing]);
+  return (
+    <section
+      ref={ref}
+      className={`narrative ${home ? "home-narrative" : "gallery-narrative"} ${c.editing ? "is-editing" : ""}`}
+      aria-label={home ? "The feeling of celebration" : "Celebration chapters"}
+    >
+      {home && (
+        <div className="narrative-intro section">
+          <E id="homeStoryTitle" as="h2" />
+          <E id="homeStoryCopy" as="p" />
+        </div>
+      )}
+      <div className="narrative-stage">
+        <nav className="story-navigation" aria-label="Celebration chapters">
+          {chapters.map((ch, i) => (
+            <a
+              key={ch}
+              href={`#${ch}`}
+              aria-current={active === i ? "step" : undefined}
+              onClick={(e) => {
+                e.preventDefault();
+                history.pushState(null, "", `#${ch}`);
+                go(i);
+              }}
+            >
+              <span aria-hidden="true">0{i + 1}</span>
+              {
+                (
+                  c.values[
+                    ["chapterSpark", "chapterDetails", "chapterMoment"][i]
+                  ] ||
+                  defaults[
+                    ["chapterSpark", "chapterDetails", "chapterMoment"][i]
+                  ]
+                ).text
+              }
+            </a>
+          ))}
+        </nav>
+        <div className="narrative-panels">
+          {chapters.map((ch, i) => (
+            <article
+              key={ch}
+              id={ch}
+              className={`narrative-panel composition-${i}`}
+            >
+              <div className="narrative-photo">
+                <E id={photos[i]} priority={!home && i === 0} />
+                {!home && !c.editing && (
+                  <button
+                    className="photo-enlarge"
+                    onClick={() => onZoom(photos[i])}
+                  >
+                    {(c.values.viewPhoto || defaults.viewPhoto).text}
+                    <span aria-hidden="true"> ↗</span>
+                  </button>
+                )}
+              </div>
+              <div className="narrative-caption">
+                <span className="chapter-number" aria-hidden="true">
+                  0{i + 1} / 03
+                </span>
+                <E
+                  id={
+                    home
+                      ? [
+                          "homeSparkTitle",
+                          "homeDetailsTitle",
+                          "homeMomentTitle",
+                        ][i]
+                      : ch + "Title"
+                  }
+                  as="h2"
+                />
+                <E
+                  id={
+                    home
+                      ? ["homeSparkCopy", "homeDetailsCopy", "homeMomentCopy"][
+                          i
+                        ]
+                      : ch + "Copy"
+                  }
+                  as="p"
+                />
+                {i === 2 && (
+                  <E
+                    id={home ? "heroWork" : "storyBook"}
+                    className="text-link"
+                  />
+                )}
+              </div>
+            </article>
+          ))}
+        </div>
       </div>
     </section>
   );
 }
 function Story() {
   const c = useContext(C),
-    ref = useRef(null),
-    [step, setStep] = useState(0),
-    [note, setNote] = useState(false),
     [zoom, setZoom] = useState(null);
   useModal(!!zoom, () => setZoom(null));
-  const chapters = ["spark", "details", "moment"];
-  const [stacked, setStacked] = useState(
-    matchMedia("(max-width:760px), (prefers-reduced-motion:reduce)").matches,
-  );
-  useEffect(() => {
-    const m = matchMedia("(max-width:760px), (prefers-reduced-motion:reduce)");
-    const f = () => setStacked(m.matches);
-    m.addEventListener("change", f);
-    return () => m.removeEventListener("change", f);
-  }, []);
-  useEffect(() => {
-    let raf;
-    const update = () => {
-      cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(() => {
-        if (c.editing) return;
-        const el = ref.current;
-        if (!el) return;
-        const r = el.getBoundingClientRect(),
-          range = Math.max(1, r.height - innerHeight);
-        const progress = Math.min(1, Math.max(0, -r.top / range));
-        setStep(Math.min(2, Math.floor(progress * 3)));
-        el.style.setProperty("--depth", `${(progress - 0.5) * 24}px`);
-      });
-    };
-    addEventListener("scroll", update, { passive: true });
-    update();
-    return () => {
-      removeEventListener("scroll", update);
-      cancelAnimationFrame(raf);
-    };
-  }, [c.editing]);
-  function go(i) {
-    setStep(i);
-    if (
-      !c.editing &&
-      !matchMedia("(prefers-reduced-motion: reduce)").matches &&
-      innerWidth > 760
-    ) {
-      const el = ref.current;
-      scrollTo({
-        top:
-          scrollY +
-          el.getBoundingClientRect().top +
-          (i * (el.offsetHeight - innerHeight)) / 2.6,
-        behavior: "smooth",
-      });
-    }
-  }
   return (
     <>
       <section className="gallery-intro section">
@@ -277,99 +382,51 @@ function Story() {
         <E id="galleryTitle" as="h1" />
         <E id="galleryCopy" as="p" />
       </section>
-      <section
-        ref={ref}
-        className={`story ${c.editing ? "editing-story" : ""}`}
-      >
-        <div className="story-stage">
-          <aside>
-            <E id="storyEyebrow" className="eyebrow" />
-            <E id="storyTitle" as="h2" />
-            <E id="storyIntro" as="p" />
-            <div className="chapter-nav">
-              {chapters.map((ch, i) => (
-                <button
-                  key={ch}
-                  aria-current={step === i ? "step" : undefined}
-                  onClick={() => go(i)}
-                >
-                  <span>0{i + 1}</span>{" "}
-                  {
-                    (
-                      c.values[
-                        ["chapterSpark", "chapterDetails", "chapterMoment"][i]
-                      ] ||
-                      defaults[
-                        ["chapterSpark", "chapterDetails", "chapterMoment"][i]
-                      ]
-                    ).text
-                  }
-                </button>
-              ))}
-            </div>
-            <E id="storyBook" className="text-link" />
-          </aside>
-          <div className="story-visual">
-            {chapters.map((ch, i) => (
-              <div
-                key={ch}
-                className={`scene ${step === i ? "active" : ""}`}
-                aria-hidden={!(c.editing || stacked) && step !== i}
-              >
-                <E id={ch} className="scene-image" />
-                <div className="scene-caption">
-                  <E id={ch + "Title"} as="h3" />
-                  <E id={ch + "Copy"} as="p" />
-                </div>
-              </div>
-            ))}
-            <div className="overlap">
-              <E id="overlap" />
-              <button
-                className="detail-trigger"
-                onClick={() => setNote(!note)}
-                aria-expanded={note}
-              >
-                ＋ {(c.values.followDetail || defaults.followDetail).text}
-              </button>
-              {note && <E id="detailNote" as="p" className="detail-note" />}
-            </div>
-          </div>
-        </div>
-      </section>
-      <section className="section">
+      <Narrative onZoom={setZoom} />
+      <section className="section collection">
         <E id="moreTitle" as="h2" />
-        <div className="editorial-grid">
-          {["wedding", "gathering", "birthday", "spark", "overlap"].map(
-            (id, i) => (
-              <div key={id} className={"tile tile-" + i}>
-                <E id={id} />
-                {!c.editing && (
-                  <button
-                    onClick={() => setZoom(id)}
-                    aria-label={`Enlarge ${c.values[id]?.alt || defaults[id].alt}`}
-                  >
-                    {(c.values.viewPhoto || defaults.viewPhoto).text} ↗
-                  </button>
-                )}
-              </div>
-            ),
-          )}
+        <E id="collectionCopy" as="p" />
+        <div className="collection-grid">
+          {["wedding", "birthday", "overlap"].map((id, i) => (
+            <figure key={id}>
+              <E id={id} />
+              <figcaption>
+                <E
+                  id={
+                    ["collectionRoom", "collectionCake", "collectionFlowers"][i]
+                  }
+                  as="p"
+                />
+              </figcaption>
+              {!c.editing && (
+                <button
+                  className="text-link"
+                  onClick={() => setZoom(id)}
+                  aria-label={`${(c.values.viewPhoto || defaults.viewPhoto).text}: ${(c.values[id] || defaults[id]).alt}`}
+                >
+                  {(c.values.viewPhoto || defaults.viewPhoto).text} ↗
+                </button>
+              )}
+            </figure>
+          ))}
         </div>
         <E id="galleryNote" as="p" className="fineprint" />
-        <div className="film">
-          <E id="filmTitle" as="h3" />
-          <E id="filmNote" as="p" />
-          <E id="storyFilm" />
-        </div>
+        {c.editing && (
+          <details className="film">
+            <summary>Archived photo montage (not shown to visitors)</summary>
+            <E id="filmTitle" as="h3" />
+            <E id="filmNote" as="p" />
+            <E id="storyFilm" />
+          </details>
+        )}
       </section>
       {zoom && (
-        <dialog open className="lightbox">
-          <button
-            autoFocus
-            onClick={() => setZoom(null)}
-            aria-label="Close photograph"
-          >
+        <dialog
+          aria-modal="true"
+          aria-label={(c.values[zoom] || defaults[zoom]).alt}
+          className="lightbox"
+        >
+          <button onClick={() => setZoom(null)}>
             {(c.values.closePhoto || defaults.closePhoto).text} ×
           </button>
           <img
@@ -381,11 +438,29 @@ function Story() {
     </>
   );
 }
-function FAQ() {
+function Process() {
+  return (
+    <section className="section process">
+      <E id="processTitle" as="h2" />
+      <div className="steps">
+        {[1, 2, 3].map((i) => (
+          <div key={i}>
+            <i aria-hidden="true">0{i}</i>
+            <div>
+              <E id={"step" + i} as="h3" />
+              <E id={"step" + i + "Copy"} as="p" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+function FAQ({ heading = "h1" }) {
   const c = useContext(C);
   return (
     <section className="section faq">
-      <E id="faqTitle" as="h1" />
+      <E id="faqTitle" as={heading} />
       {[1, 2, 3, 4].map((n) => (
         <details key={n} open={c.editing || undefined}>
           <summary>
@@ -427,14 +502,16 @@ function Booking() {
     }
   }
   return (
-    <section className="section">
+    <section
+      className={`section booking-page ${c.editing ? "is-editing" : ""}`}
+    >
       <E id="bookingEye" className="eyebrow" />
       <E id="bookingTitle" as="h1" />
       <E id="bookingCopy" as="p" />
       <div className="booking">
         <div className="booking-art">
           <E id="bookingPhoto" />
-          <E id="bookingInset" className="booking-inset" />
+
           <E id="footerEmail" className="text-link" />
         </div>
         {sent ? (
@@ -572,7 +649,7 @@ function Field({ name, type = "text", required, area, wide }) {
 function Login({ setSession }) {
   const [error, setError] = useState("");
   return (
-    <main className="login section">
+    <section className="login section">
       <span className="eyebrow">EVENTS2LUV ADMIN</span>
       <h1>Welcome back.</h1>
       <p>Sign in to edit your website.</p>
@@ -610,7 +687,7 @@ function Login({ setSession }) {
         <p role="alert">{error}</p>
         <button className="button">Sign in</button>
       </form>
-    </main>
+    </section>
   );
 }
 function Editor() {
@@ -1035,11 +1112,14 @@ export function App() {
           <Story />
         ) : path === "/services" ? (
           <>
-            <Services />
-            <FAQ />
+            <Services full />
+            <FAQ heading="h2" />
           </>
         ) : path === "/about" ? (
-          <About />
+          <>
+            <About full />
+            <Process />
+          </>
         ) : path === "/faq" ? (
           <FAQ />
         ) : (
@@ -1059,27 +1139,10 @@ export function App() {
                 </div>
               </div>
             </section>
+            <Narrative home />
             <Services />
-            <section className="home-story section">
-              <E id="overlap" />
-              <div>
-                <E id="detailsTitle" as="h2" />
-                <E id="detailsCopy" as="p" />
-                <E id="heroWork" className="text-link" />
-              </div>
-            </section>
-            <div className="section">
-              <E id="processTitle" as="h2" />
-              <div className="steps">
-                {[1, 2, 3].map((i) => (
-                  <div key={i}>
-                    <i>0{i}</i>
-                    <E id={"step" + i} />
-                  </div>
-                ))}
-              </div>
-            </div>
             <About />
+            <Process />
           </>
         )}
       </main>

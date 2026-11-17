@@ -40,7 +40,7 @@ for (const [id, text] of Object.entries({
     "A thoughtful place setting brings flowers, textures, and small personal touches into one welcoming moment.",
   moreTitle: "Little things. Lasting feelings.",
   galleryNote:
-    "Photographs from the existing Events2Luv website. This collection illustrates our approach; individual event stories will be added as details are confirmed.",
+    "A selection from the existing Events2Luv website, brought together by a feeling for celebration. These photographs are not presented as one event.",
   aboutEye: "MEET YOUR PLANNER",
   aboutTitle: "A personal touch, from the start.",
   aboutCopy:
@@ -203,4 +203,65 @@ export const mediaSpecs = {
   bookingInset: "Square 1:1 · recommended 1200 × 1200",
   storyFilm: "Landscape 16:9 · recommended 1920 × 1080",
 };
+for (const [id, text] of Object.entries({
+  homeStoryTitle: "Before the room fills with love.",
+  homeStoryCopy:
+    "A few glimpses from our collection. Small details, a welcoming setting, and the people at the heart of it all.",
+  homeSparkTitle: "A little thing. A whole feeling.",
+  homeSparkCopy:
+    "The flowers, the colors, the personal touches. A celebration begins with what feels meaningful to you.",
+  homeDetailsTitle: "A place for everyone you love.",
+  homeDetailsCopy:
+    "Those first ideas find their place in a setting made for gathering. There is beauty in how it all comes together.",
+  homeMomentTitle: "And then, it’s your moment.",
+  homeMomentCopy:
+    "The reason for every thoughtful detail: being here, together. Let’s begin with the people and moments that matter to you.",
+  servicesPageTitle: "A celebration that feels like you.",
+  servicesPageCopy:
+    "Weddings, birthdays, and meaningful gatherings in the Hudson Valley. Start with your occasion, then tell us your priorities and the budget you feel comfortable with.",
+  weddingsMore:
+    "Share your date or a flexible time frame, your location, and what you imagine for the day. We’ll discuss availability and the planning support that fits before shaping a proposal.",
+  birthdaysMore:
+    "For adults and children, milestones and smaller celebrations. Tell us who you’re celebrating, your approximate guest count, and any ideas you would love to explore.",
+  gatheringsMore:
+    "From social occasions and meetings to celebrations of life. Tell us the purpose of your gathering and what your guests need; we’ll discuss the right scope together.",
+  aboutPageTitle: "Meet Shaniese Sanders.",
+  aboutApproachTitle: "Start with what matters to you.",
+  aboutApproach:
+    "A thoughtful budget helps put your priorities into focus. The first conversation is a chance to share the kind of gathering you imagine, who will be there, and what matters most.",
+  aboutConversation:
+    "You don’t need to have every answer. A location you’re considering, a flexible date, or a favorite detail from the gallery is a useful place to begin.",
+  step1Copy:
+    "Send a few details about your occasion, location, date, and priorities. It’s fine if some things are still taking shape.",
+  step2Copy:
+    "We review your inquiry, confirm availability, and arrange a conversation about your ideas, budget, and a suitable proposal.",
+  step3Copy:
+    "Once the scope and booking are agreed, the planning can take shape around your priorities and the people you’re bringing together.",
+  ctaCopy:
+    "Tell us what you’re imagining. We’ll review your event details and get in touch about availability and next steps.",
+  collectionCopy:
+    "A closer look at the setting, a birthday centerpiece, and a floral detail. Each brings its own character to the collection.",
+  collectionRoom: "Soft draping and flowers frame a reception table.",
+  collectionCake:
+    "Feathers and sparkling details give a birthday cake its character.",
+  collectionFlowers: "White roses, deep blue accents, and a little shimmer.",
+}))
+  t(id, text);
+m(
+  "homeDetail",
+  "banquet-flowers.webp",
+  "White roses and blue accents above hanging crystals",
+);
+m(
+  "homeSetting",
+  "wedding-reception.webp",
+  "A reception table framed by draping and flowers",
+);
+mediaSpecs.homeDetail = "Landscape 4:3 · recommended 1600 × 1200";
+mediaSpecs.homeSetting = "Landscape 4:3 · recommended 2400 × 1800";
+content.homeSetting.y = 52;
+content.spark.x = 48;
+content.spark.mobileX = 48;
+content.bookingPhoto.src = "/assets/banquet-flowers.webp";
+content.bookingPhoto.alt = "White roses and deep blue floral accents";
 export const editableIds = Object.keys(content);

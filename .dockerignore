@@ -8,3 +8,6 @@ dist
 .eslintcache
 .editor-test-build.mjs
 assets/original
+artifacts
+test-results
+playwright-report
