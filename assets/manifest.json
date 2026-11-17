@@ -1,0 +1,115 @@
+{
+  "source_site": "https://events2luv.com/",
+  "assets": [
+    {
+      "filename": "legacy-hero.jpg",
+      "source": "https://events2luv.com/imgs/HERO%20PIC.jpg",
+      "purpose": "Existing site hero; provenance unverified",
+      "category": "legacy-marketing",
+      "width": 5472,
+      "height": 3648,
+      "bytes": 2487143,
+      "provenance": "Reused from existing public Events2Luv site; no independent verification of photographer rights or Events2Luv role."
+    },
+    {
+      "filename": "founder-shaniese.jpg",
+      "source": "https://events2luv.com/imgs/Shaniese%20Profile%20Pic.jpg",
+      "purpose": "Founder Shaniese Sanders portrait",
+      "category": "founder",
+      "width": 1143,
+      "height": 1626,
+      "bytes": 592135,
+      "provenance": "Reused from existing public Events2Luv site; no independent verification of photographer rights or Events2Luv role."
+    },
+    {
+      "filename": "legacy-logo.png",
+      "source": "https://events2luv.com/imgs/new%20logo%20for%20website.png",
+      "purpose": "Existing brand logo",
+      "category": "brand",
+      "width": 2954,
+      "height": 869,
+      "bytes": 86091,
+      "provenance": "Reused from existing public Events2Luv site; no independent verification of photographer rights or Events2Luv role."
+    },
+    {
+      "filename": "birthday-cake.jpg",
+      "source": "https://events2luv.com/imgs/IMG_5219.jpg",
+      "purpose": "Existing birthday services image",
+      "category": "legacy-service",
+      "width": 1242,
+      "height": 1232,
+      "bytes": 1110273,
+      "provenance": "Reused from existing public Events2Luv site; no independent verification of photographer rights or Events2Luv role."
+    },
+    {
+      "filename": "banquet-flowers.jpg",
+      "source": "https://events2luv.com/imgs/banquet_flowers.JPG",
+      "purpose": "Existing gallery floral detail",
+      "category": "legacy-gallery",
+      "width": 1242,
+      "height": 899,
+      "bytes": 276730,
+      "provenance": "Reused from existing public Events2Luv site; no independent verification of photographer rights or Events2Luv role."
+    },
+    {
+      "filename": "banquet-place-setting.jpg",
+      "source": "https://events2luv.com/imgs/banquet_table2.JPG",
+      "purpose": "Existing gallery place setting",
+      "category": "legacy-gallery",
+      "width": 1242,
+      "height": 971,
+      "bytes": 175104,
+      "provenance": "Reused from existing public Events2Luv site; no independent verification of photographer rights or Events2Luv role."
+    },
+    {
+      "filename": "wedding-reception.jpg",
+      "source": "https://events2luv.com/imgs/events2luv-wedding_banner.JPG",
+      "purpose": "Existing gallery reception scene",
+      "category": "legacy-gallery",
+      "width": 4032,
+      "height": 3024,
+      "bytes": 3047138,
+      "provenance": "Reused from existing public Events2Luv site; no independent verification of photographer rights or Events2Luv role."
+    },
+    {
+      "filename": "wedding-couple.jpg",
+      "source": "https://events2luv.com/imgs/events2luv-wedding_dress.jpg",
+      "purpose": "Existing gallery wedding couple",
+      "category": "legacy-gallery",
+      "width": 1242,
+      "height": 1789,
+      "bytes": 909972,
+      "provenance": "Reused from existing public Events2Luv site; no independent verification of photographer rights or Events2Luv role."
+    },
+    {
+      "filename": "wedding-preparation.jpg",
+      "source": "https://events2luv.com/imgs/events2luv-makeup.jpg",
+      "purpose": "Existing gallery preparation portrait",
+      "category": "legacy-gallery",
+      "width": 3024,
+      "height": 4032,
+      "bytes": 1867748,
+      "provenance": "Reused from existing public Events2Luv site; no independent verification of photographer rights or Events2Luv role."
+    },
+    {
+      "filename": "wedding-inspiration.jpg",
+      "source": "https://events2luv.com/imgs/photos-by-lanty-719702-unsplash.jpg",
+      "purpose": "Existing service image explicitly named as Unsplash",
+      "category": "stock-inspiration",
+      "width": 2640,
+      "height": 3960,
+      "bytes": 833402,
+      "provenance": "Reused from existing public Events2Luv site; no independent verification of photographer rights or Events2Luv role."
+    },
+    {
+      "filename": "celebration-inspiration.jpg",
+      "source": "https://events2luv.com/imgs/warren-wong-323107-unsplash.jpg",
+      "purpose": "Existing service image explicitly named as Unsplash",
+      "category": "stock-inspiration",
+      "width": 3529,
+      "height": 4787,
+      "bytes": 1513440,
+      "provenance": "Reused from existing public Events2Luv site; no independent verification of photographer rights or Events2Luv role."
+    }
+  ]
+}
