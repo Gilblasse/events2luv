@@ -5,3 +5,6 @@ dist
 .env
 .env.*
 *.sqlite*
+.eslintcache
+.editor-test-build.mjs
+assets/original

@@ -739,7 +739,7 @@ function Editor() {
                   ? "JPG, PNG or WebP · maximum 15 MB. " +
                     (mediaSpecs[c.selected] ||
                       "Portrait or landscape · recommended 2000 pixels on the longest edge.")
-                  : "MP4 or WebM · maximum 100 MB, 5 minutes. Recommended 1920 × 1080."}
+                  : "MP4 or WebM · maximum 100 MB, 5 minutes, 4096 pixels per side. Landscape 16:9 · recommended 1920 × 1080."}
               </p>
               <label>
                 Image / video description
@@ -818,6 +818,10 @@ function Editor() {
                       accept="image/jpeg,image/png,image/webp"
                       onChange={(e) => upload(e.target.files[0], "poster")}
                     />
+                    <small>
+                      JPG, PNG or WebP · maximum 15 MB. Landscape 16:9 ·
+                      recommended 1920 × 1080.
+                    </small>
                   </label>
                   <label>
                     Captions (.vtt)
@@ -826,6 +830,7 @@ function Editor() {
                       accept=".vtt"
                       onChange={(e) => upload(e.target.files[0], "captions")}
                     />
+                    <small>WebVTT (.vtt) · maximum 1 MB.</small>
                   </label>
                 </>
               )}

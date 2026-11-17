@@ -6,27 +6,16 @@ export const safeLink = (v) =>
     (/^\/(?!\/)/.test(v) && !/[\\\x00-\x20]/.test(v)) ||
     /^#[\w-]*$/.test(v));
 export function validateBlock(id, v) {
+  if (!Object.hasOwn(content, id)) return false;
   const d = content[id];
   if (!d || !v || v.type !== d.type) return false;
-  if (
-    Object.keys(v).some(
-      (k) =>
-        ![
-          "type",
-          "text",
-          "href",
-          "src",
-          "alt",
-          "x",
-          "y",
-          "poster",
-          "captions",
-          "mobileX",
-          "mobileY",
-        ].includes(k),
-    )
-  )
-    return false;
+  const fields = {
+    text: ["type", "text"],
+    link: ["type", "text", "href"],
+    image: ["type", "src", "alt", "x", "y", "mobileX", "mobileY"],
+    video: ["type", "src", "alt", "x", "y", "poster", "captions"],
+  };
+  if (Object.keys(v).some((key) => !fields[d.type].includes(key))) return false;
   if (v.type === "text")
     return (
       typeof v.text === "string" &&

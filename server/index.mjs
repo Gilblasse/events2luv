@@ -138,6 +138,16 @@ app.put("/api/content/:id", gate, origin, csrf, (req, res) => {
       .json({ error: "Please check the content and link format." });
   for (const key of ["src", "poster", "captions"]) {
     const u = value[key];
+    if (u?.startsWith("/assets/")) {
+      const isVideo = key === "src" && value.type === "video";
+      const validExtension = isVideo
+        ? /\.(mp4|webm)$/i
+        : /\.(jpe?g|png|webp)$/i;
+      if (!validExtension.test(u) || !existsSync(resolve("public", u.slice(1))))
+        return res
+          .status(400)
+          .json({ error: "That media file is not available for this slot." });
+    }
     if (u?.startsWith("/media/")) {
       const m = db.prepare("SELECT * FROM media WHERE id=?").get(u.slice(7));
       if (!m || (!m.published && m.owner !== req.session.email))
@@ -160,12 +170,10 @@ app.put("/api/content/:id", gate, origin, csrf, (req, res) => {
   const saved = saveBlock(req.params.id, value, version, req.session.email);
   return saved
     ? res.json(saved)
-    : res
-        .status(409)
-        .json({
-          error:
-            "Another admin updated this item. Your draft is preserved. Reload the latest version before saving.",
-        });
+    : res.status(409).json({
+        error:
+          "Another admin updated this item. Your draft is preserved. Reload the latest version before saving.",
+      });
 });
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -269,12 +277,10 @@ app.delete("/api/upload/:id", gate, origin, csrf, (req, res) => {
 });
 app.post("/api/inquiries", origin, async (req, res) => {
   if (!rate("inquiry:" + req.ip, 5, 3600000))
-    return res
-      .status(429)
-      .json({
-        code: "inquiryRate",
-        error: "Please try again later, or email us directly.",
-      });
+    return res.status(429).json({
+      code: "inquiryRate",
+      error: "Please try again later, or email us directly.",
+    });
   const b = req.body;
   if (b.website) return res.json({ ok: true });
   const fields = [
@@ -300,12 +306,10 @@ app.post("/api/inquiries", origin, async (req, res) => {
     !/^\S+@\S+\.\S+$/.test(data.email) ||
     !data.occasion
   )
-    return res
-      .status(400)
-      .json({
-        code: "inquiryInvalid",
-        error: "Please enter your name, email, and event type.",
-      });
+    return res.status(400).json({
+      code: "inquiryInvalid",
+      error: "Please enter your name, email, and event type.",
+    });
   const id = randomUUID();
   db.prepare("INSERT INTO inquiries VALUES(?,?,?)").run(
     id,
@@ -355,14 +359,12 @@ if (prod) {
 }
 app.use((err, req, res, next) => {
   console.error(err.code || err.message);
-  res
-    .status(400)
-    .json({
-      error:
-        err.code === "LIMIT_FILE_SIZE"
-          ? "File is too large. Maximum upload is 100 MB."
-          : "The request could not be completed.",
-    });
+  res.status(400).json({
+    error:
+      err.code === "LIMIT_FILE_SIZE"
+        ? "File is too large. Maximum upload is 100 MB."
+        : "The request could not be completed.",
+  });
 });
 const portArg = process.argv.indexOf("--port");
 app.listen(

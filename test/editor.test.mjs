@@ -50,7 +50,8 @@ after(async () => {
   await unlink(path);
 });
 let records = {},
-  writes = 0;
+  writes = 0,
+  failNextSave = false;
 globalThis.fetch = async (url, opts = {}) => {
   if (url === "/api/session")
     return Response.json({ email: "test@example.test", csrf: "test-token" });
@@ -58,6 +59,13 @@ globalThis.fetch = async (url, opts = {}) => {
   if (url.startsWith("/api/content/") && opts.method === "PUT") {
     const id = url.split("/").at(-1),
       { value, version } = JSON.parse(opts.body);
+    if (failNextSave) {
+      failNextSave = false;
+      return Response.json(
+        { error: "Save failed; please retry." },
+        { status: 503 },
+      );
+    }
     records[id] = { value, version: version + 1 };
     writes++;
     return Response.json(records[id]);
@@ -128,5 +136,24 @@ test("shared link label and destination preview together and Cancel reverts both
       .filter((x) => x.textContent === "Services")
       .every((x) => x.getAttribute("href") === "/services"),
   );
+  app.unmount();
+});
+
+test("failed Save keeps the draft for retry and leaves saved content intact", async () => {
+  const app = render(React.createElement(App));
+  await waitFor(() => {
+    if (!edit("heroTitle")) throw Error("Waiting for admin");
+  });
+  const original = structuredClone(records.heroTitle);
+  fireEvent.click(edit("heroTitle"));
+  fireEvent.change(words(), { target: { value: "Retry this draft" } });
+  failNextSave = true;
+  fireEvent.click(button("Save changes"));
+  await screen.findByText("Save failed; please retry.");
+  assert.equal(words().value, "Retry this draft");
+  assert.deepEqual(records.heroTitle, original);
+  fireEvent.click(button("Save changes"));
+  await closed();
+  assert.equal(records.heroTitle.value.text, "Retry this draft");
   app.unmount();
 });

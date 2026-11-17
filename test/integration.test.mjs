@@ -299,6 +299,73 @@ test("consultation requests persist privately and require valid input", async ()
   assert.equal(rows[0].payload.name, "QA Test");
   assert.equal((await api("/api/inquiries", { admin: false })).status, 401);
 });
+test("invalid media saves and unauthorized uploads preserve published content", async () => {
+  const before = await api("/api/content", { admin: false }).then((r) =>
+    r.json(),
+  );
+  for (const value of [
+    { ...before.hero.value, src: "/assets/missing.webp" },
+    { ...before.hero.value, src: "/assets/celebration-film.mp4" },
+    { ...before.hero.value, src: "/media/missing.webp" },
+  ]) {
+    assert.equal(
+      (
+        await api("/api/content/hero", {
+          method: "PUT",
+          data: { value, version: before.hero.version },
+        })
+      ).status,
+      400,
+    );
+  }
+  assert.equal(
+    (await api("/api/upload", { method: "POST", admin: false })).status,
+    401,
+  );
+  assert.equal(
+    (
+      await api("/api/content/heroTitle", {
+        method: "PUT",
+        data: {
+          version: before.heroTitle.version,
+          value: {
+            type: "text",
+            text: "Invalid mixed type",
+            src: before.hero.value.src,
+          },
+        },
+      })
+    ).status,
+    400,
+  );
+  assert.deepEqual(
+    await api("/api/content", { admin: false }).then((r) => r.json()),
+    before,
+  );
+});
+test("image and video edits and consultation inbox survive another server restart", async () => {
+  const before = await api("/api/content", { admin: false }).then((r) =>
+    r.json(),
+  );
+  await stop();
+  await start();
+  assert.deepEqual(
+    await api("/api/content", { admin: false }).then((r) => r.json()),
+    before,
+  );
+  assert.equal(
+    (await api(before.hero.value.src, { admin: false })).status,
+    200,
+  );
+  assert.equal(
+    (await api(before.storyFilm.value.src, { admin: false })).status,
+    200,
+  );
+  assert.equal(
+    (await api("/api/inquiries").then((r) => r.json()))[0].payload.name,
+    "QA Test",
+  );
+});
 test("logout revokes session and write access", async () => {
   assert.equal((await api("/api/logout", { method: "POST" })).status, 200);
   assert.deepEqual(await api("/api/session").then((r) => r.json()), {});
