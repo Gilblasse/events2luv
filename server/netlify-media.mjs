@@ -2,7 +2,11 @@ import express from 'express';
 import { getStore } from '@netlify/blobs';
 import { randomUUID } from 'node:crypto';
 const CHUNK = 2 * 1024 * 1024;
-const store = () => getStore({ name: 'events2luv-media', consistency: 'strong' });
+const sandbox = process.env.E2L_SANDBOX;
+const store = () => getStore({
+  name: sandbox ? `events2luv-media-${sandbox}` : 'events2luv-media',
+  consistency: 'strong',
+});
 export async function putMedia(id,buffer,storage=store()) {
   for(let i=0;i<buffer.length;i+=CHUNK) await storage.set(`${id}/${i/CHUNK}`,buffer.subarray(i,i+CHUNK));
   await storage.setJSON(`${id}/meta`,{size:buffer.length});

@@ -46,3 +46,29 @@ test('durable media chunks support bounded video range reads and cancellation cl
   const bad=response();await sendMedia({headers:{range:'bytes=99999999-'}},bad,{id:'clip.mp4',mime:'video/mp4'},storage);assert.equal(bad.statusCode,416);
   await removeMedia('clip.mp4',storage);assert.equal(map.size,0);
 });
+
+test('staging writes stay in its own schema even when using the production pool', async () => {
+  const pg = new PGlite();
+  try {
+    const query = async (sql, args) => {
+      if (sql.startsWith('SELECT pg_advisory_xact_lock')) return { rows: [] };
+      if (sql.includes('CREATE TABLE')) return pg.exec(sql);
+      const result = await pg.query(sql, args);
+      return { ...result, rowCount: result.affectedRows };
+    };
+    const pool = { query, connect: async () => ({ query, release() {} }) };
+    const production = createPostgresStore(() => pool);
+    const sandbox = 'e2l_qa_' + 'a'.repeat(24);
+    const staging = createPostgresStore(() => pool, sandbox);
+    const preview = createPostgresStore(() => pool, 'e2l_qa_' + 'b'.repeat(24));
+
+    await production.saveBlock('hero', { type: 'text', text: 'Production' }, 0, 'owner@example.test');
+    assert.deepEqual(await staging.allBlocks(), {});
+    await staging.saveBlock('hero', { type: 'text', text: 'Staging' }, 0, 'qa@example.test');
+    assert.equal((await staging.allBlocks()).hero.value.text, 'Staging');
+    assert.equal((await production.allBlocks()).hero.value.text, 'Production');
+    assert.deepEqual(await preview.allBlocks(), {});
+  } finally {
+    await pg.close();
+  }
+});

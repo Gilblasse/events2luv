@@ -19,6 +19,8 @@ import {
 import { validateBlock } from "./schema.mjs";
 const app = express(),
   prod = process.env.NODE_ENV === "production";
+const sandbox = process.env.E2L_SANDBOX;
+const contentCacheTag = sandbox ? `events2luv-content-${sandbox}` : 'events2luv-content';
 if (process.env.TRUST_PROXY) app.set("trust proxy", process.env.TRUST_PROXY);
 if (prod && !process.env.APP_ORIGIN && !process.env.NETLIFY)
   throw Error("APP_ORIGIN is required in production.");
@@ -93,7 +95,7 @@ app.get("/api/content", async (req, res) => {
   const blocks = await allBlocks();
   if (process.env.NETLIFY) res.set({
     'Netlify-CDN-Cache-Control': 'public, durable, max-age=86400',
-    'Netlify-Cache-Tag': 'events2luv-content',
+    'Netlify-Cache-Tag': contentCacheTag,
   });
   res.json(blocks);
 });
@@ -182,7 +184,7 @@ app.put("/api/content/:id", gate, origin, csrf, async (req, res) => {
   }
   const saved = await saveBlock(req.params.id, value, version, req.session.email);
   if (saved && process.env.NETLIFY) {
-    try { await purgeCache({tags:['events2luv-content']}); }
+    try { await purgeCache({tags:[contentCacheTag]}); }
     catch {
       console.error('Content saved; public cache refresh failed.');
       saved.warning = 'Your changes are saved, but public refresh is delayed. Redeploy the site to refresh it immediately.';
@@ -344,7 +346,7 @@ app.post("/api/inquiries", origin, async (req, res) => {
     JSON.stringify(data),
     new Date().toISOString(),
   );
-  if (process.env.SMTP_URL && process.env.INQUIRY_TO && process.env.MAIL_FROM) {
+  if (!sandbox && process.env.SMTP_URL && process.env.INQUIRY_TO && process.env.MAIL_FROM) {
     try {
       await nodemailer.createTransport(process.env.SMTP_URL).sendMail({
         from: process.env.MAIL_FROM,
