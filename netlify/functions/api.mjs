@@ -18,5 +18,6 @@ export default async function handler(request,context){
   const headers = new Headers(result.headers);
   for (const cookie of result.cookies || []) headers.append('set-cookie', cookie);
   const body = result.isBase64Encoded ? Buffer.from(result.body, 'base64') : result.body;
-  return new Response(request.method === 'HEAD' ? null : body, { status: result.statusCode, headers });
+  const bodyless = request.method === 'HEAD' || [204, 205, 304].includes(result.statusCode);
+  return new Response(bodyless ? null : body, { status: result.statusCode, headers });
 }

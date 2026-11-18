@@ -5,6 +5,9 @@ const m = (id, src, alt) =>
   (content[id] = { type: "image", src: "/assets/" + src, alt, x: 50, y: 50 });
 for (const [id, text] of Object.entries({
   brand: "Events2Luv",
+  coverCaption: "From the wedding collection",
+  previousPhoto: "Previous photograph",
+  nextPhoto: "Next photograph",
   eyebrow: "HUDSON VALLEY EVENT PLANNING",
   heroTitle: "Your moment.",
   heroItalic: "Beautifully planned.",
@@ -118,7 +121,11 @@ for (const [id, text, href] of [
 ])
   l(id, text, href);
 for (const [id, src, alt] of [
-  ["hero", "legacy-hero.webp", "Flowers on a welcoming reception table"],
+  [
+    "hero",
+    "wedding-couple.webp",
+    "A newlywed couple walking together, the wedding dress trailing behind them",
+  ],
   ["wedding", "wedding-reception.webp", "Wedding reception table"],
   ["birthday", "birthday-cake.webp", "Birthday celebration details"],
   ["gathering", "banquet-place-setting.webp", "An elegant place setting"],
@@ -143,6 +150,8 @@ for (const [id, src, alt] of [
   ["bookingInset", "birthday-cake.webp", "Birthday cake details"],
 ])
   m(id, src, alt);
+content.hero.y = 30;
+content.hero.mobileY = 24;
 content.moment.y = 0;
 content.moment.mobileY = 0;
 content.storyFilm = {
@@ -170,9 +179,9 @@ for (const [id, text] of Object.entries({
     "We use these details to respond to your event inquiry. Please do not include payment or other sensitive information.",
   menuLabel: "Menu",
   storyEyebrow: "THE CELEBRATION STORY",
-  chapterSpark: "The spark",
+  chapterSpark: "The invitation",
   chapterDetails: "The details",
-  chapterMoment: "The moment",
+  chapterMoment: "The celebration",
   followDetail: "Follow the detail",
   viewPhoto: "View photograph",
   closePhoto: "Close",

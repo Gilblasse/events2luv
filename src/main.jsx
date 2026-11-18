@@ -8,6 +8,7 @@ import React, {
 import { createRoot } from "react-dom/client";
 import { content as defaults, mediaSpecs } from "./content.js";
 import "./style.css";
+import "./editorial.css";
 const C = createContext();
 async function request(url, options = {}) {
   const r = await fetch(url, {
@@ -34,7 +35,7 @@ function useModal(active, onClose) {
   useEffect(() => {
     if (!active) return;
     last.current = document.activeElement;
-    const modal = document.querySelector(".drawer,.lightbox,.inbox");
+    const modal = document.querySelector(".drawer,.inbox");
     if (!modal) return;
     const nodes = () =>
       [
@@ -96,6 +97,7 @@ function E({ id, as = "span", className = "" }) {
         src={v.src}
         poster={v.poster}
         controls
+        playsInline
         preload="metadata"
       >
         {v.captions && (
@@ -145,6 +147,7 @@ function Header() {
   return (
     <header>
       <div className="brand">
+        <span className="rings" aria-hidden="true" />
         {c.editing ? (
           <E id="brand" />
         ) : (
@@ -157,6 +160,7 @@ function Header() {
         ))}
         <E id="navBook" className="button" />
       </nav>
+      <E id="navBook" className="mobile-book" />
       <details className="mobile-nav">
         <summary>
           <E id="menuLabel" />
@@ -178,11 +182,11 @@ function CTA() {
     </section>
   );
 }
-function Services() {
+function Services({ heading = "h1" }) {
   return (
     <section className="section">
       <E id="servicesEye" className="eyebrow" />
-      <E id="servicesTitle" as="h2" />
+      <E id="servicesTitle" as={heading} />
       <div className="services-grid">
         {[
           ["wedding", "weddings"],
@@ -200,13 +204,13 @@ function Services() {
     </section>
   );
 }
-function About() {
+function About({ heading = "h1" }) {
   return (
     <section className="about section">
       <E id="founder" />
       <div>
         <E id="aboutEye" className="eyebrow" />
-        <E id="aboutTitle" as="h2" />
+        <E id="aboutTitle" as={heading} />
         <E id="aboutCopy" as="p" />
         <E id="aboutLocal" as="p" />
         <E id="aboutBook" className="text-link" />
@@ -214,178 +218,230 @@ function About() {
     </section>
   );
 }
-function Story() {
-  const c = useContext(C),
-    ref = useRef(null),
-    [step, setStep] = useState(0),
-    [note, setNote] = useState(false),
-    [zoom, setZoom] = useState(null);
-  useModal(!!zoom, () => setZoom(null));
-  const chapters = ["spark", "details", "moment"];
-  const [stacked, setStacked] = useState(
-    matchMedia("(max-width:760px), (prefers-reduced-motion:reduce)").matches,
+const chapters = [
+  { id: "spark", label: "chapterSpark" },
+  { id: "details", label: "chapterDetails" },
+  { id: "moment", label: "chapterMoment" },
+];
+
+function Cover() {
+  return (
+    <section className="cover">
+      <div className="cover-letter">
+        <E id="eyebrow" className="eyebrow" />
+        <h1>
+          <E id="heroTitle" />
+          <E id="heroItalic" as="em" />
+        </h1>
+        <E id="heroCopy" as="p" />
+        <div className="cover-actions">
+          <E id="heroBook" className="button" />
+          <E id="heroWork" className="text-link" />
+        </div>
+      </div>
+      <figure className="cover-plate">
+        <E id="hero" />
+        <figcaption>
+          <span className="plate-rule" />
+          <E id="coverCaption" />
+        </figcaption>
+      </figure>
+    </section>
   );
+}
+
+function ChapterSpreads({ gallery = false }) {
+  const { editing } = useContext(C);
+  const [active, setActive] = useState("spark");
+  const list = useRef(null);
   useEffect(() => {
-    const m = matchMedia("(max-width:760px), (prefers-reduced-motion:reduce)");
-    const f = () => setStacked(m.matches);
-    m.addEventListener("change", f);
-    return () => m.removeEventListener("change", f);
+    if (!window.IntersectionObserver) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) setActive(entry.target.id);
+        }
+      },
+      { rootMargin: "-30% 0px -48%" },
+    );
+    for (const article of list.current.children) observer.observe(article);
+    return () => observer.disconnect();
   }, []);
+  return (
+    <section className="chapter-section">
+      <div className="chapter-band">
+        <E id={gallery ? "storyEyebrow" : "processTitle"} />
+        <nav aria-label="Celebration chapters">
+          {chapters.map(({ id, label }, index) => (
+            <div key={id}>
+              {editing ? (
+                <E id={label} />
+              ) : (
+                <a
+                  href={"#" + id}
+                  aria-current={active === id ? "step" : undefined}
+                >
+                  <i aria-hidden="true">0{index + 1}</i>
+                  <E id={label} />
+                </a>
+              )}
+            </div>
+          ))}
+        </nav>
+      </div>
+      <div ref={list} className="chapter-spreads">
+        {chapters.map(({ id, label }, i) => (
+          <article id={id} key={id} className={"chapter spread-" + id}>
+            <div className="chapter-copy">
+              <E id={gallery ? label : "step" + (i + 1)} className="eyebrow" />
+              <E id={id + "Title"} as="h2" />
+              <E id={id + "Copy"} as="p" />
+              {id === "details" && (
+                <details open={editing || undefined}>
+                  <summary>
+                    <E id="followDetail" />
+                  </summary>
+                  <E id="detailNote" as="p" />
+                </details>
+              )}
+              {id === "moment" && (
+                <E
+                  id={gallery ? "storyBook" : "heroWork"}
+                  className="text-link"
+                />
+              )}
+            </div>
+            <div className="chapter-photos">
+              <E id={id === "moment" && !gallery ? "wedding" : id} />
+              {id === "details" && <E id="overlap" />}
+            </div>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+const galleryPhotos = [
+  "wedding",
+  "gathering",
+  "birthday",
+  "spark",
+  "overlap",
+  "moment",
+];
+
+function Story() {
+  const c = useContext(C);
+  const [zoom, setZoom] = useState(null);
+  const dialog = useRef(null);
+  const trigger = useRef(null);
+  const opened = zoom !== null;
   useEffect(() => {
-    let raf;
-    const update = () => {
-      cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(() => {
-        if (c.editing) return;
-        const el = ref.current;
-        if (!el) return;
-        const r = el.getBoundingClientRect(),
-          range = Math.max(1, r.height - innerHeight);
-        const progress = Math.min(1, Math.max(0, -r.top / range));
-        setStep(Math.min(2, Math.floor(progress * 3)));
-        el.style.setProperty("--depth", `${(progress - 0.5) * 24}px`);
-      });
-    };
-    addEventListener("scroll", update, { passive: true });
-    update();
+    if (!opened) return;
+    const el = dialog.current;
+    el.showModal();
     return () => {
-      removeEventListener("scroll", update);
-      cancelAnimationFrame(raf);
+      el.close();
+      trigger.current?.focus({ preventScroll: true });
     };
-  }, [c.editing]);
-  function go(i) {
-    setStep(i);
-    if (
-      !c.editing &&
-      !matchMedia("(prefers-reduced-motion: reduce)").matches &&
-      innerWidth > 760
-    ) {
-      const el = ref.current;
-      scrollTo({
-        top:
-          scrollY +
-          el.getBoundingClientRect().top +
-          (i * (el.offsetHeight - innerHeight)) / 2.6,
-        behavior: "smooth",
-      });
-    }
-  }
+  }, [opened]);
+  const move = (by) =>
+    setZoom((i) => (i + by + galleryPhotos.length) % galleryPhotos.length);
+  const photo =
+    opened && (c.values[galleryPhotos[zoom]] || defaults[galleryPhotos[zoom]]);
   return (
     <>
-      <section className="gallery-intro section">
-        <E id="galleryEye" className="eyebrow" />
-        <E id="galleryTitle" as="h1" />
-        <E id="galleryCopy" as="p" />
-      </section>
-      <section
-        ref={ref}
-        className={`story ${c.editing ? "editing-story" : ""}`}
-      >
-        <div className="story-stage">
-          <aside>
-            <E id="storyEyebrow" className="eyebrow" />
-            <E id="storyTitle" as="h2" />
-            <E id="storyIntro" as="p" />
-            <div className="chapter-nav">
-              {chapters.map((ch, i) => (
-                <button
-                  key={ch}
-                  aria-current={step === i ? "step" : undefined}
-                  onClick={() => go(i)}
-                >
-                  <span>0{i + 1}</span>{" "}
-                  {
-                    (
-                      c.values[
-                        ["chapterSpark", "chapterDetails", "chapterMoment"][i]
-                      ] ||
-                      defaults[
-                        ["chapterSpark", "chapterDetails", "chapterMoment"][i]
-                      ]
-                    ).text
-                  }
-                </button>
-              ))}
-            </div>
-            <E id="storyBook" className="text-link" />
-          </aside>
-          <div className="story-visual">
-            {chapters.map((ch, i) => (
-              <div
-                key={ch}
-                className={`scene ${step === i ? "active" : ""}`}
-                aria-hidden={!(c.editing || stacked) && step !== i}
-              >
-                <E id={ch} className="scene-image" />
-                <div className="scene-caption">
-                  <E id={ch + "Title"} as="h3" />
-                  <E id={ch + "Copy"} as="p" />
-                </div>
-              </div>
-            ))}
-            <div className="overlap">
-              <E id="overlap" />
-              <button
-                className="detail-trigger"
-                onClick={() => setNote(!note)}
-                aria-expanded={note}
-              >
-                ＋ {(c.values.followDetail || defaults.followDetail).text}
-              </button>
-              {note && <E id="detailNote" as="p" className="detail-note" />}
-            </div>
-          </div>
+      <section className="gallery-cover">
+        <div>
+          <E id="galleryEye" className="eyebrow" />
+          <E id="galleryTitle" as="h1" />
+          <E id="galleryCopy" as="p" />
         </div>
+        <E id="bookingPhoto" />
       </section>
-      <section className="section">
+      <section className="gallery-letter">
+        <E id="storyTitle" as="h2" />
+        <E id="storyIntro" as="p" />
+      </section>
+      <ChapterSpreads gallery />
+      <section className="album section">
         <E id="moreTitle" as="h2" />
-        <div className="editorial-grid">
-          {["wedding", "gathering", "birthday", "spark", "overlap"].map(
-            (id, i) => (
-              <div key={id} className={"tile tile-" + i}>
-                <E id={id} />
-                {!c.editing && (
-                  <button
-                    onClick={() => setZoom(id)}
-                    aria-label={`Enlarge ${c.values[id]?.alt || defaults[id].alt}`}
-                  >
-                    {(c.values.viewPhoto || defaults.viewPhoto).text} ↗
-                  </button>
-                )}
-              </div>
-            ),
-          )}
+        <div className="album-plates">
+          {galleryPhotos.map((id, index) => (
+            <figure key={id}>
+              <E id={id} />
+              {!c.editing && (
+                <button
+                  onClick={(event) => {
+                    trigger.current = event.currentTarget;
+                    setZoom(index);
+                  }}
+                  aria-label={`Enlarge ${(c.values[id] || defaults[id]).alt}`}
+                >
+                  {(c.values.viewPhoto || defaults.viewPhoto).text}
+                  <span aria-hidden="true"> ?</span>
+                </button>
+              )}
+            </figure>
+          ))}
         </div>
         <E id="galleryNote" as="p" className="fineprint" />
-        <div className="film">
-          <E id="filmTitle" as="h3" />
-          <E id="filmNote" as="p" />
-          <E id="storyFilm" />
-        </div>
       </section>
-      {zoom && (
-        <dialog open className="lightbox">
-          <button
-            autoFocus
-            onClick={() => setZoom(null)}
-            aria-label="Close photograph"
-          >
-            {(c.values.closePhoto || defaults.closePhoto).text} ×
-          </button>
-          <img
-            src={(c.values[zoom] || defaults[zoom]).src}
-            alt={(c.values[zoom] || defaults[zoom]).alt}
-          />
+      <section className="screening">
+        <div>
+          <E id="filmTitle" as="h2" />
+          <E id="filmNote" as="p" />
+        </div>
+        <E id="storyFilm" />
+      </section>
+      {opened && (
+        <dialog
+          ref={dialog}
+          className="viewer"
+          aria-label={photo.alt}
+          onCancel={() => setZoom(null)}
+          onKeyDown={(event) => {
+            if (event.key === "ArrowLeft") move(-1);
+            if (event.key === "ArrowRight") move(1);
+          }}
+        >
+          <div className="viewer-controls">
+            <span aria-live="polite">
+              {zoom + 1} / {galleryPhotos.length}
+            </span>
+            <button onClick={() => setZoom(null)} autoFocus>
+              {(c.values.closePhoto || defaults.closePhoto).text} ?
+            </button>
+          </div>
+          <img src={photo.src} alt={photo.alt} />
+          <div className="viewer-controls">
+            <button
+              aria-label={
+                (c.values.previousPhoto || defaults.previousPhoto).text
+              }
+              onClick={() => move(-1)}
+            >
+              ?
+            </button>
+            <p>{photo.alt}</p>
+            <button
+              aria-label={(c.values.nextPhoto || defaults.nextPhoto).text}
+              onClick={() => move(1)}
+            >
+              ?
+            </button>
+          </div>
         </dialog>
       )}
     </>
   );
 }
-function FAQ() {
+function FAQ({ heading = "h1" }) {
   const c = useContext(C);
   return (
     <section className="section faq">
-      <E id="faqTitle" as="h1" />
+      <E id="faqTitle" as={heading} />
       {[1, 2, 3, 4].map((n) => (
         <details key={n} open={c.editing || undefined}>
           <summary>
@@ -630,18 +686,45 @@ function Editor() {
     setError("");
     try {
       let r;
-      if (import.meta.env.VITE_NETLIFY_UPLOADS === 'true') {
-        const headers = { 'x-csrf-token': c.session.csrf };
-        const upload = await request('/api/uploads/start', {method:'POST',headers,body:JSON.stringify({name:file.name,size:file.size,mime:file.name.endsWith('.vtt')?'text/vtt':file.type})});
-        for(let offset=0;offset<file.size;offset+=upload.chunkSize) {
-          const response=await fetch(`/api/uploads/${upload.id}/${offset/upload.chunkSize}`,{method:'PUT',headers:{...headers,'content-type':'application/octet-stream'},body:file.slice(offset,offset+upload.chunkSize)});
-          if(!response.ok)throw Error('Upload interrupted. Please choose the file again.');
+      if (import.meta.env.VITE_NETLIFY_UPLOADS === "true") {
+        const headers = { "x-csrf-token": c.session.csrf };
+        const upload = await request("/api/uploads/start", {
+          method: "POST",
+          headers,
+          body: JSON.stringify({
+            name: file.name,
+            size: file.size,
+            mime: file.name.endsWith(".vtt") ? "text/vtt" : file.type,
+          }),
+        });
+        for (let offset = 0; offset < file.size; offset += upload.chunkSize) {
+          const response = await fetch(
+            `/api/uploads/${upload.id}/${offset / upload.chunkSize}`,
+            {
+              method: "PUT",
+              headers: {
+                ...headers,
+                "content-type": "application/octet-stream",
+              },
+              body: file.slice(offset, offset + upload.chunkSize),
+            },
+          );
+          if (!response.ok)
+            throw Error("Upload interrupted. Please choose the file again.");
         }
-        r=await request(`/api/uploads/${upload.id}/finish`,{method:'POST',headers,body:'{}'});
+        r = await request(`/api/uploads/${upload.id}/finish`, {
+          method: "POST",
+          headers,
+          body: "{}",
+        });
       } else {
         const body = new FormData();
         body.append("file", file);
-        r = await request("/api/upload", {method:"POST",headers:{"x-csrf-token":c.session.csrf},body});
+        r = await request("/api/upload", {
+          method: "POST",
+          headers: { "x-csrf-token": c.session.csrf },
+          body,
+        });
       }
       c.pending.current.push(r.src);
       change(key, r.src);
@@ -1043,7 +1126,7 @@ export function App() {
         ) : path === "/services" ? (
           <>
             <Services />
-            <FAQ />
+            <FAQ heading="h2" />
           </>
         ) : path === "/about" ? (
           <About />
@@ -1051,42 +1134,10 @@ export function App() {
           <FAQ />
         ) : (
           <>
-            <section className="hero">
-              <E id="hero" />
-              <div className="hero-content">
-                <E id="eyebrow" className="eyebrow" />
-                <h1>
-                  <E id="heroTitle" />
-                  <E id="heroItalic" className="italic" />
-                </h1>
-                <E id="heroCopy" as="p" />
-                <div className="hero-actions">
-                  <E id="heroBook" className="button light" />
-                  <E id="heroWork" className="text-link" />
-                </div>
-              </div>
-            </section>
-            <Services />
-            <section className="home-story section">
-              <E id="overlap" />
-              <div>
-                <E id="detailsTitle" as="h2" />
-                <E id="detailsCopy" as="p" />
-                <E id="heroWork" className="text-link" />
-              </div>
-            </section>
-            <div className="section">
-              <E id="processTitle" as="h2" />
-              <div className="steps">
-                {[1, 2, 3].map((i) => (
-                  <div key={i}>
-                    <i>0{i}</i>
-                    <E id={"step" + i} />
-                  </div>
-                ))}
-              </div>
-            </div>
-            <About />
+            <Cover />
+            <ChapterSpreads />
+            <Services heading="h2" />
+            <About heading="h2" />
           </>
         )}
       </main>
