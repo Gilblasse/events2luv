@@ -63,7 +63,7 @@ const gate = (req, res, next) =>
     ? next()
     : res.status(401).json({ error: "Please sign in as an admin." });
 function origin(req, res, next) {
-  const expected =
+  const expected = process.env.E2L_SANDBOX_ORIGIN ||
     (process.env.NETLIFY ? process.env.DEPLOY_PRIME_URL || process.env.URL : process.env.APP_ORIGIN) || `${req.protocol}://${req.headers.host}`;
   if (req.headers.origin !== expected)
     return res.status(403).json({ error: "Request origin is not allowed." });

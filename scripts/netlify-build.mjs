@@ -4,13 +4,23 @@ import { join } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { build } from 'esbuild';
 
-const { CONTEXT: deployContext, BRANCH: branch } = process.env;
+const {
+  CONTEXT: deployContext,
+  BRANCH: branch,
+  REVIEW_ID: reviewId,
+  DEPLOY_PRIME_URL: deployPrimeUrl,
+} = process.env;
 const isProduction = deployContext === 'production';
 if (!isProduction && (!['branch-deploy', 'deploy-preview'].includes(deployContext) || !branch)) {
   throw new Error('A Netlify deploy context and Git branch are required.');
 }
+const deployKey = deployContext === 'deploy-preview' ? reviewId : branch;
+if (!isProduction && (!deployKey || !deployPrimeUrl)) {
+  throw new Error('A Netlify review or branch ID and primary deploy URL are required.');
+}
 const sandbox = isProduction ? '' :
-  `e2l_qa_${createHash('sha256').update(`${deployContext}:${branch}`).digest('hex').slice(0, 24)}`;
+  `e2l_qa_${createHash('sha256').update(`${deployContext}:${deployKey}`).digest('hex').slice(0, 24)}`;
+const sandboxOrigin = sandbox ? new URL(deployPrimeUrl).origin : '';
 
 // ffprobe-static ships every OS; retain only the build target to fit Lambda's package limit.
 const base='node_modules/ffprobe-static/bin';
@@ -30,6 +40,7 @@ await build({
     'process.env.NETLIFY':'"true"',
     'process.env.NODE_ENV':'"production"',
     'process.env.E2L_SANDBOX': JSON.stringify(sandbox),
+    'process.env.E2L_SANDBOX_ORIGIN': JSON.stringify(sandboxOrigin),
   },
 });
 if (isProduction && (process.env.E2L_ADMIN_EMAIL || process.env.E2L_ADMIN_PASSWORD)) {
