@@ -652,8 +652,9 @@ function Field({ name, type = "text", required, area, wide }) {
     </label>
   );
 }
-function Login({ setSession }) {
+function Login() {
   const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
   return (
     <section className="login section">
       <span className="eyebrow">EVENTS2LUV ADMIN</span>
@@ -662,18 +663,21 @@ function Login({ setSession }) {
       <form
         onSubmit={async (e) => {
           e.preventDefault();
+          if (busy) return;
+          setError("");
+          setBusy(true);
           try {
-            setSession(
-              await request("/api/login", {
-                method: "POST",
-                body: JSON.stringify(
-                  Object.fromEntries(new FormData(e.currentTarget)),
-                ),
-              }),
-            );
-            location.href = "/gallery";
+            await request("/api/login", {
+              method: "POST",
+              body: JSON.stringify(
+                Object.fromEntries(new FormData(e.currentTarget)),
+              ),
+            });
+            // The gallery reads the new session after navigation.
+            location.replace("/gallery");
           } catch (e) {
             setError(e.message);
+            setBusy(false);
           }
         }}
       >
@@ -691,9 +695,41 @@ function Login({ setSession }) {
           />
         </label>
         <p role="alert">{error}</p>
-        <button className="button">Sign in</button>
+        <button className="button" disabled={busy}>
+          {busy ? "Signing in…" : "Sign in"}
+        </button>
       </form>
     </section>
+  );
+}
+function NewPasswordField({ name, label, visibilityLabel = "new password" }) {
+  const [visible, setVisible] = useState(false);
+  const action = visible ? "Hide" : "Show";
+  return (
+    <div className="password-field">
+      <label htmlFor={name}>{label}</label>
+      <div className="password-control">
+        <input
+          id={name}
+          name={name}
+          type={visible ? "text" : "password"}
+          autoComplete="new-password"
+          autoCapitalize="none"
+          spellCheck={false}
+          minLength={14}
+          maxLength={256}
+          required
+        />
+        <button
+          type="button"
+          aria-label={`${action} ${visibilityLabel}`}
+          aria-controls={name}
+          onClick={() => setVisible((previous) => !previous)}
+        >
+          {action}
+        </button>
+      </div>
+    </div>
   );
 }
 function ChangePassword({ session, onSuccess }) {
@@ -727,14 +763,12 @@ function ChangePassword({ session, onSuccess }) {
           Current password
           <input name="currentPassword" type="password" autoComplete="current-password" maxLength={256} required />
         </label>
-        <label>
-          New password
-          <input name="newPassword" type="password" autoComplete="new-password" minLength={14} maxLength={256} required />
-        </label>
-        <label>
-          Confirm new password
-          <input name="confirmPassword" type="password" autoComplete="new-password" minLength={14} maxLength={256} required />
-        </label>
+        <NewPasswordField name="newPassword" label="New password" />
+        <NewPasswordField
+          name="confirmPassword"
+          label="Confirm new password"
+          visibilityLabel="password confirmation"
+        />
         {error && <p role="alert">{error}</p>}
         <button className="button" disabled={busy}>{busy ? "Saving…" : "Save password"}</button>
       </form>
@@ -1055,7 +1089,7 @@ function Editor() {
 }
 export function App() {
   const [records, setRecords] = useState(null),
-    [session, setSession] = useState({}),
+    [session, setSession] = useState(null),
     [editing, setEditing] = useState(false),
     [selected, setSelected] = useState(null),
     [draft, setDraft] = useState(null),
@@ -1069,15 +1103,18 @@ export function App() {
   );
   if (selected && draft) values[selected] = draft;
   useEffect(() => {
-    Promise.all([
-      request("/api/content").then(setRecords),
-      request("/api/session"),
-    ])
-      .then(([, s]) => {
+    request("/api/content")
+      .then(setRecords)
+      .catch(() => setToast("Content could not be refreshed. Please reload."));
+    request("/api/session")
+      .then((s) => {
         setSession(s);
         setEditing(!!s.email);
       })
-      .catch(() => setToast("Content could not be refreshed. Please reload."));
+      .catch(() => {
+        setSession({});
+        setToast("Your sign-in status could not be checked. Please reload.");
+      });
   }, []);
   useEffect(() => {
     const fn = (e) => {
@@ -1150,7 +1187,7 @@ export function App() {
       <a className="skip" href="#main">
         Skip to content
       </a>
-      {session.email && (
+      {session?.email && (
         <div className="adminbar">
           <strong>Events2Luv / Admin</strong>
           <span>{session.email}</span>
@@ -1195,7 +1232,11 @@ export function App() {
       <Header />
       <main id="main">
         {path === "/admin" ? (
-          session.email ? (
+          session === null ? (
+            <section className="login section">
+              <p role="status">Checking your session…</p>
+            </section>
+          ) : session.email ? (
             <ChangePassword session={session} onSuccess={() => {
               setSession({});
               setEditing(false);
@@ -1203,7 +1244,7 @@ export function App() {
               setToast("Password updated. Sign in with your new password.");
             }} />
           ) : (
-            <Login setSession={setSession} />
+            <Login />
           )
         ) : path === "/booking" ? (
           <Booking />

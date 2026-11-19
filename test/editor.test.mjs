@@ -14,6 +14,7 @@ for (const k of [
   "location",
   "Event",
   "MouseEvent",
+  "FormData",
 ])
   globalThis[k] = dom.window[k];
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
@@ -217,6 +218,82 @@ test("current-page navigation follows the edited destination across desktop, mob
       target: { value: "/services?category=events" },
     });
     assert.equal(current().length, 3);
+  } finally {
+    app.unmount();
+    dom.reconfigure({ url: "http://localhost/" });
+  }
+});
+
+test("sign-in waits for gallery navigation without showing the change password form", async () => {
+  dom.reconfigure({ url: "http://localhost/admin" });
+  const originalLocation = globalThis.location;
+  const originalFetch = globalThis.fetch;
+  const redirects = [];
+  let resolveLogin;
+  const login = new Promise((resolve) => (resolveLogin = resolve));
+  globalThis.location = {
+    href: originalLocation.href,
+    origin: originalLocation.origin,
+    pathname: originalLocation.pathname,
+    replace: (url) => redirects.push(url),
+  };
+  globalThis.fetch = async (url, options) => {
+    if (url === "/api/session") return Response.json({});
+    if (url === "/api/login") return login;
+    return originalFetch(url, options);
+  };
+  const app = render(React.createElement(App));
+  try {
+    const signIn = await screen.findByRole("button", { name: "Sign in" });
+    fireEvent.change(screen.getByLabelText("Email"), {
+      target: { value: "test@example.test" },
+    });
+    fireEvent.change(screen.getByLabelText("Password"), {
+      target: { value: "Local test password" },
+    });
+    fireEvent.click(signIn);
+    assert.equal(signIn.disabled, true);
+    assert.deepEqual(redirects, []);
+    await React.act(async () => {
+      resolveLogin(Response.json({ email: "test@example.test", csrf: "test-token" }));
+    });
+    assert.deepEqual(redirects, ["/gallery"]);
+    assert.equal(screen.queryByRole("heading", { name: "Change password" }), null);
+    assert.equal(screen.getByRole("button", { name: "Signing in…" }).disabled, true);
+  } finally {
+    app.unmount();
+    globalThis.location = originalLocation;
+    globalThis.fetch = originalFetch;
+    dom.reconfigure({ url: "http://localhost/" });
+  }
+});
+
+test("the change password page masks both new passwords and toggles them independently", async () => {
+  dom.reconfigure({ url: "http://localhost/admin" });
+  const app = render(React.createElement(App));
+  try {
+    assert.equal(screen.queryByRole("button", { name: "Sign in" }), null);
+    const password = await screen.findByLabelText("New password");
+    const confirmation = screen.getByLabelText("Confirm new password");
+    const current = screen.getByLabelText("Current password");
+    assert.equal(password.type, "password");
+    assert.equal(confirmation.type, "password");
+
+    const value = "Local test password";
+    fireEvent.change(password, { target: { value } });
+    fireEvent.change(confirmation, { target: { value } });
+    fireEvent.click(screen.getByRole("button", { name: "Show new password" }));
+    assert.equal(password.type, "text");
+    assert.equal(confirmation.type, "password");
+    fireEvent.click(screen.getByRole("button", { name: "Show password confirmation" }));
+    fireEvent.click(screen.getByRole("button", { name: "Hide new password" }));
+    assert.equal(password.type, "password");
+    assert.equal(confirmation.type, "text");
+    fireEvent.click(screen.getByRole("button", { name: "Hide password confirmation" }));
+    assert.equal(confirmation.type, "password");
+    assert.equal(current.type, "password");
+    assert.equal(password.value, value);
+    assert.equal(confirmation.value, value);
   } finally {
     app.unmount();
     dom.reconfigure({ url: "http://localhost/" });
