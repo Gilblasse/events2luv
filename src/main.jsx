@@ -655,7 +655,7 @@ function Field({ name, type = "text", required, area, wide }) {
 function Login({ setSession }) {
   const [error, setError] = useState("");
   return (
-    <main className="login section">
+    <section className="login section">
       <span className="eyebrow">EVENTS2LUV ADMIN</span>
       <h1>Welcome back.</h1>
       <p>Sign in to edit your website.</p>
@@ -693,7 +693,52 @@ function Login({ setSession }) {
         <p role="alert">{error}</p>
         <button className="button">Sign in</button>
       </form>
-    </main>
+    </section>
+  );
+}
+function ChangePassword({ session, onSuccess }) {
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+  return (
+    <section className="login section">
+      <h1>Change password</h1>
+      <p>Use 14 to 256 characters. After saving, sign in again with your new password.</p>
+      <form
+        onSubmit={async (event) => {
+          event.preventDefault();
+          if (busy) return;
+          setError("");
+          setBusy(true);
+          try {
+            await request("/api/admin/password", {
+              method: "POST",
+              headers: { "x-csrf-token": session.csrf },
+              body: JSON.stringify(Object.fromEntries(new FormData(event.currentTarget))),
+            });
+            onSuccess();
+          } catch (error) {
+            setError(error.message);
+            setBusy(false);
+          }
+        }}
+      >
+        <input type="hidden" autoComplete="username" value={session.email} />
+        <label>
+          Current password
+          <input name="currentPassword" type="password" autoComplete="current-password" maxLength={256} required />
+        </label>
+        <label>
+          New password
+          <input name="newPassword" type="password" autoComplete="new-password" minLength={14} maxLength={256} required />
+        </label>
+        <label>
+          Confirm new password
+          <input name="confirmPassword" type="password" autoComplete="new-password" minLength={14} maxLength={256} required />
+        </label>
+        {error && <p role="alert">{error}</p>}
+        <button className="button" disabled={busy}>{busy ? "Saving…" : "Save password"}</button>
+      </form>
+    </section>
   );
 }
 function Editor() {
@@ -1124,6 +1169,13 @@ export function App() {
           >
             All content
           </button>
+          {path !== "/admin" && (
+            <button onClick={async () => {
+              if (await close()) location.href = "/admin";
+            }}>
+              Change password
+            </button>
+          )}
           <button
             onClick={async () => {
               if (await close()) {
@@ -1142,11 +1194,20 @@ export function App() {
       )}
       <Header />
       <main id="main">
-        {path === "/admin" && !session.email ? (
-          <Login setSession={setSession} />
+        {path === "/admin" ? (
+          session.email ? (
+            <ChangePassword session={session} onSuccess={() => {
+              setSession({});
+              setEditing(false);
+              setContentList(false);
+              setToast("Password updated. Sign in with your new password.");
+            }} />
+          ) : (
+            <Login setSession={setSession} />
+          )
         ) : path === "/booking" ? (
           <Booking />
-        ) : path === "/gallery" || path === "/admin" ? (
+        ) : path === "/gallery" ? (
           <Story />
         ) : path === "/services" ? (
           <>

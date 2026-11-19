@@ -13,6 +13,9 @@ import {
   dataDir,
   verify,
   hashToken,
+  passwordHash,
+  changePassword,
+  createSession,
   allBlocks,
   saveBlock,
 } from "./store.mjs";
@@ -125,24 +128,46 @@ app.post("/api/login", origin, async (req, res) => {
   const token = randomBytes(32).toString("hex"),
     c = randomBytes(24).toString("hex");
   await db.prepare("DELETE FROM sessions WHERE expires<?").run(Date.now());
-  await db.prepare("INSERT INTO sessions VALUES(?,?,?,?)").run(
-    hashToken(token),
-    a.email,
-    c,
-    Date.now() + 8 * 3600000,
-  );
+  if (!(await createSession(a.email, a.password, hashToken(token), c, Date.now() + 8 * 3600000)))
+    return res.status(401).json({ error: "Email or password is incorrect." });
   res.setHeader(
     "Set-Cookie",
     `e2l=${token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=28800${prod ? "; Secure" : ""}`,
   );
   res.json({ email: a.email, csrf: c });
 });
-app.post("/api/logout", gate, origin, csrf, async (req, res) => {
-  await db.prepare("DELETE FROM sessions WHERE token=?").run(req.session.token);
+function clearSessionCookie(res) {
   res.setHeader(
     "Set-Cookie",
     `e2l=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0${prod ? "; Secure" : ""}`,
   );
+}
+app.post("/api/logout", gate, origin, csrf, async (req, res) => {
+  await db.prepare("DELETE FROM sessions WHERE token=?").run(req.session.token);
+  clearSessionCookie(res);
+  res.json({ ok: true });
+});
+app.post("/api/admin/password", gate, origin, csrf, async (req, res) => {
+  const { currentPassword, newPassword, confirmPassword } = req.body ?? {};
+  if (typeof currentPassword !== "string" || !currentPassword || currentPassword.length > 256)
+    return res.status(400).json({ error: "Enter your current password." });
+  if (typeof newPassword !== "string" || newPassword.length < 14 || newPassword.length > 256)
+    return res.status(400).json({ error: "Use 14 to 256 characters for your new password." });
+  if (newPassword !== confirmPassword)
+    return res.status(400).json({ error: "The new passwords do not match." });
+  if (currentPassword === newPassword)
+    return res.status(400).json({ error: "Choose a different password." });
+
+  const { email, token } = req.session;
+  if (!(await rate("change-password:" + email, 10, 900000)))
+    return res.status(429).json({ error: "Too many attempts. Please try again later." });
+  const admin = await db.prepare("SELECT password FROM admins WHERE email=?").get(email);
+  if (!admin || !verify(currentPassword, admin.password))
+    return res.status(403).json({ error: "Your current password is incorrect." });
+  if (!(await changePassword(email, token, admin.password, passwordHash(newPassword))))
+    return res.status(409).json({ error: "Your credentials or session changed. Sign in again." });
+
+  clearSessionCookie(res);
   res.json({ ok: true });
 });
 app.put("/api/content/:id", gate, origin, csrf, async (req, res) => {

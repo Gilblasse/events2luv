@@ -396,3 +396,34 @@ test("logout revokes session and write access", async () => {
   assert.deepEqual(await api("/api/session").then((r) => r.json()), {});
   assert.equal((await api("/api/inquiries")).status, 401);
 });
+test("admin password change requires the current password and revokes every session", async () => {
+  const email = "qa@example.test";
+  const currentPassword = "Test-only-password-748293!";
+  const newPassword = "New-test-only-password-835792!";
+  const login = (password) =>
+    api("/api/login", { method: "POST", admin: false, data: { email, password } });
+  const first = await login(currentPassword);
+  const second = await login(currentPassword);
+  assert.equal(first.status, 200);
+  assert.equal(second.status, 200);
+  cookie = first.headers.get("set-cookie").split(";")[0];
+  csrf = (await first.json()).csrf;
+  const otherCookie = second.headers.get("set-cookie").split(";")[0];
+  const data = { currentPassword, newPassword, confirmPassword: newPassword };
+  const change = (options = {}) =>
+    api("/api/admin/password", { method: "POST", data, ...options });
+
+  assert.equal((await change({ admin: false })).status, 401);
+  assert.equal((await change({ headers: { origin: "https://other.example" } })).status, 403);
+  assert.equal((await change({ headers: { "x-csrf-token": "" } })).status, 403);
+  assert.equal((await change({ data: { ...data, confirmPassword: "different" } })).status, 400);
+  assert.equal((await change({ data: { ...data, currentPassword: "wrong" } })).status, 403);
+
+  const changed = await change();
+  assert.equal(changed.status, 200);
+  assert.match(changed.headers.get("set-cookie"), /Max-Age=0/);
+  for (const stale of [cookie, otherCookie])
+    assert.deepEqual(await api("/api/session", { headers: { cookie: stale } }).then((r) => r.json()), {});
+  assert.equal((await login(currentPassword)).status, 401);
+  assert.equal((await login(newPassword)).status, 200);
+});

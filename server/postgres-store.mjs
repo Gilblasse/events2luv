@@ -72,6 +72,29 @@ async function saveBlock(id,value,version,email) {
     return {value,version:version+1};
   });
 }
+async function createSession(email, password, token, csrf, expires) {
+  await init();
+  // Serialize session creation with password rotation, including an in-flight login.
+  const result = await query(
+    `INSERT INTO sessions
+     SELECT $1,email,$2,$3 FROM admins WHERE email=$4 AND password=$5 FOR UPDATE`,
+    [token, csrf, expires, email, password],
+  );
+  return result.rowCount === 1;
+}
+async function changePassword(email, token, previousHash, nextHash) {
+  await init();
+  return transaction(async client => {
+    const result = await client.query(
+      `UPDATE admins SET password=$1 WHERE email=$2 AND password=$3
+       AND EXISTS (SELECT 1 FROM sessions WHERE token=$4 AND email=$2 AND expires>$5)`,
+      [nextHash, email, previousHash, token, Date.now()],
+    );
+    if (result.rowCount !== 1) return false;
+    await client.query('DELETE FROM sessions WHERE email=$1', [email]);
+    return true;
+  });
+}
 async function rate(key,max,window) {
   await init();
   const now=Date.now();
@@ -81,6 +104,6 @@ async function rate(key,max,window) {
   return rows[0].count<=max;
 }
 
-return { db, allBlocks, saveBlock, rate };
+return { db, allBlocks, saveBlock, rate, changePassword, createSession };
 }
-export const { db, allBlocks, saveBlock, rate } = createPostgresStore(defaultPool, process.env.E2L_SANDBOX);
+export const { db, allBlocks, saveBlock, rate, changePassword, createSession } = createPostgresStore(defaultPool, process.env.E2L_SANDBOX);
