@@ -316,10 +316,6 @@ footer > div {
   gap: 2rem;
   font-size: 0.72rem;
 }
-footer > div > a:last-child {
-  margin-left: auto;
-  color: #81736c;
-}
 .booking {
   display: grid;
   grid-template-columns: 1fr 1.1fr;
@@ -832,10 +828,6 @@ textarea::placeholder {
   footer > div {
     flex-wrap: wrap;
     gap: 1.2rem;
-  }
-  footer > div > a:last-child {
-    width: 100%;
-    margin: 1rem 0 0;
   }
   .booking {
     grid-template-columns: 1fr;

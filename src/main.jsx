@@ -1150,9 +1150,6 @@ export function App() {
           {["navServices", "navWork", "navAbout", "navFaq"].map((id) => (
             <E key={id} id={id} />
           ))}
-          <a href="/admin">
-            {(values.adminSignIn || defaults.adminSignIn).text}
-          </a>
         </div>
       </footer>
       {toast && (

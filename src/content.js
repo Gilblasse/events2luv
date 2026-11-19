@@ -193,7 +193,6 @@ for (const [id, text] of Object.entries({
   occasionLife: "Celebration of life",
   occasionOther: "Other",
   sendingLabel: "Sending…",
-  adminSignIn: "Admin sign in",
 }))
   t(id, text);
 for (const key of ["weddings", "birthdays", "gatherings"])
