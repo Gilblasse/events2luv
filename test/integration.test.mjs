@@ -180,6 +180,31 @@ test("invalid links and unknown content cannot be saved", async () => {
     400,
   );
 });
+test("link visibility persists and only accepts booleans on links", async () => {
+  const link = { type: "link", text: "Services", href: "/services" };
+  const save = (id, value, version = 0) =>
+    api("/api/content/" + id, { method: "PUT", data: { value, version } });
+  assert.equal(
+    (await save("navServices", { ...link, visible: "false" })).status,
+    400,
+  );
+  assert.equal(
+    (await save("faqTitle", { type: "text", text: "FAQ", visible: false }))
+      .status,
+    400,
+  );
+  assert.equal((await save("navServices", link)).status, 200);
+  assert.equal(
+    (await save("navServices", { ...link, visible: false }, 1)).status,
+    200,
+  );
+  const published = await (await api("/api/content", { admin: false })).json();
+  assert.equal(published.navServices.value.visible, false);
+  assert.equal(
+    (await save("navServices", { ...link, visible: true }, 2)).status,
+    200,
+  );
+});
 async function upload(bytes, mime, name) {
   const body = new FormData();
   body.append("file", new Blob([bytes], { type: mime }), name);

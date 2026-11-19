@@ -55,7 +55,8 @@ header nav {
   font-size: 0.89rem;
 }
 header nav a:hover,
-.mobile-book a:hover {
+.mobile-book a:hover,
+a[aria-current="page"] {
   text-decoration: underline;
   text-underline-offset: 5px;
 }
@@ -549,8 +550,6 @@ body:has(.viewer[open]) {
     font-size: 0.79rem;
   }
   .mobile-book a {
-    text-decoration: underline;
-    text-underline-offset: 4px;
     padding-block: 15px;
   }
   .mobile-book .arrow-icon {

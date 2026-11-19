@@ -89,6 +89,7 @@ test("inline text Cancel discards draft and Save survives remount; subsequent Ca
     if (!edit("heroTitle")) throw Error("Waiting for admin");
   });
   fireEvent.click(edit("heroTitle"));
+  assert.equal(screen.queryByRole("switch"), null);
   fireEvent.change(words(), { target: { value: "An unsaved heading" } });
   assert.ok(heading().includes("An unsaved heading"));
   fireEvent.click(button("Cancel"));
@@ -156,4 +157,68 @@ test("failed Save keeps the draft for retry and leaves saved content intact", as
   await closed();
   assert.equal(records.heroTitle.value.text, "Retry this draft");
   app.unmount();
+});
+
+test("a hidden shared link disappears in preview and can be restored in edit mode", async () => {
+  const app = render(React.createElement(App));
+  const toggle = () =>
+    screen.getByRole("switch", { name: "Show link to visitors" });
+  const faqLinks = () => document.querySelectorAll('a[href="/faq"]');
+  await waitFor(() => assert.ok(edit("navFaq")));
+  assert.equal(button("Requests"), undefined);
+
+  fireEvent.click(edit("navFaq"));
+  assert.equal(toggle().checked, true);
+  fireEvent.click(toggle());
+  fireEvent.click(button("Cancel"));
+  await closed();
+  assert.equal(document.querySelector(".hidden-link-note"), null);
+  fireEvent.click(edit("navFaq"));
+  fireEvent.click(toggle());
+  fireEvent.click(button("Save changes"));
+  await closed();
+  assert.equal(records.navFaq.value.visible, false);
+  assert.equal(document.querySelectorAll(".hidden-link-note").length, 3);
+
+  fireEvent.click(button("Preview website"));
+  await waitFor(() => assert.equal(faqLinks().length, 0));
+  fireEvent.click(button("Edit mode"));
+  await waitFor(() => assert.ok(edit("navFaq")));
+  fireEvent.click(edit("navFaq"));
+  assert.equal(toggle().checked, false);
+  fireEvent.click(toggle());
+  fireEvent.click(button("Save changes"));
+  await closed();
+  fireEvent.click(button("Preview website"));
+  await waitFor(() =>
+    assert.equal(button("Edit mode")?.textContent, "Edit mode"),
+  );
+  assert.equal(faqLinks().length, 3);
+  app.unmount();
+});
+
+test("current-page navigation follows the edited destination across desktop, mobile and footer", async () => {
+  dom.reconfigure({ url: "http://localhost/services/?from=footer" });
+  const app = render(React.createElement(App));
+  try {
+    await waitFor(() => assert.ok(edit("navServices")));
+    const current = () => [
+      ...document.querySelectorAll('a[aria-current="page"]'),
+    ];
+    assert.equal(current().length, 3);
+    assert.ok(current().every((link) => link.textContent === "Services"));
+    fireEvent.click(edit("navServices"));
+    const destination = screen.getByLabelText(/Link destination/);
+    fireEvent.change(destination, {
+      target: { value: "https://example.com/services" },
+    });
+    assert.equal(current().length, 0);
+    fireEvent.change(destination, {
+      target: { value: "/services?category=events" },
+    });
+    assert.equal(current().length, 3);
+  } finally {
+    app.unmount();
+    dom.reconfigure({ url: "http://localhost/" });
+  }
 });

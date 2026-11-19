@@ -11,7 +11,7 @@ export function validateBlock(id, v) {
   if (!d || !v || v.type !== d.type) return false;
   const fields = {
     text: ["type", "text"],
-    link: ["type", "text", "href"],
+    link: ["type", "text", "href", "visible"],
     image: ["type", "src", "alt", "x", "y", "mobileX", "mobileY"],
     video: ["type", "src", "alt", "x", "y", "poster", "captions"],
   };
@@ -27,7 +27,8 @@ export function validateBlock(id, v) {
       typeof v.text === "string" &&
       v.text.length > 0 &&
       v.text.length <= 200 &&
-      safeLink(v.href)
+      safeLink(v.href) &&
+      (v.visible === undefined || typeof v.visible === "boolean")
     );
   if (v.type === "image" || v.type === "video")
     return (

@@ -578,6 +578,40 @@ textarea::placeholder {
 .drawer-body label {
   margin: 1rem 0;
 }
+.drawer-body .link-visibility {
+  font-size: inherit;
+  cursor: pointer;
+}
+.link-visibility input {
+  appearance: none;
+  width: 2.5rem;
+  height: 1.5rem;
+  padding: 2px;
+  border: 1px solid currentColor;
+  border-radius: 1rem;
+  color: var(--plum);
+  cursor: pointer;
+}
+.link-visibility input::before {
+  content: "";
+  display: block;
+  width: 1rem;
+  height: 1rem;
+  border-radius: 50%;
+  background: currentColor;
+}
+.link-visibility input:checked {
+  background: var(--plum);
+  color: white;
+}
+.link-visibility input:checked::before {
+  margin-left: auto;
+}
+.hidden-link-note {
+  margin-inline-start: 0.4em;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
 .drawer-body p[role="alert"] {
   color: #a02c43;
   font-size: 0.8rem;

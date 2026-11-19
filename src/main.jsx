@@ -69,16 +69,35 @@ function useModal(active, onClose) {
     };
   }, [active]);
 }
+const pagePath = (path) => path.replace(/\/+$/, "") || "/";
+function linksToCurrentPage(href) {
+  if (!href || href.startsWith("#")) return false;
+  try {
+    const url = new URL(href, location.href);
+    return (
+      url.origin === location.origin &&
+      pagePath(url.pathname) === pagePath(location.pathname)
+    );
+  } catch {
+    return false;
+  }
+}
 function E({ id, as = "span", className = "" }) {
   const c = useContext(C),
     v = c.values[id] || defaults[id];
   const Tag = as;
   let node;
   if (v.type === "text") node = <Tag>{v.text}</Tag>;
-  else if (v.type === "link")
+  else if (v.type === "link") {
+    if (!c.records || (v.visible === false && !c.editing)) return null;
     node = (
       <a
         href={v.href}
+        aria-current={
+          id.startsWith("nav") && linksToCurrentPage(v.href)
+            ? "page"
+            : undefined
+        }
         onClick={(e) => {
           if (c.editing) {
             e.preventDefault();
@@ -87,10 +106,13 @@ function E({ id, as = "span", className = "" }) {
         }}
       >
         {v.text}
+        {v.visible === false && (
+          <small className="hidden-link-note">Hidden</small>
+        )}
         <span aria-hidden="true" className="arrow-icon" />
       </a>
     );
-  else if (v.type === "video")
+  } else if (v.type === "video")
     node = v.src ? (
       <video
         aria-label={v.alt}
@@ -151,7 +173,12 @@ function Header() {
         {c.editing ? (
           <E id="brand" />
         ) : (
-          <a href="/">{(c.values.brand || defaults.brand).text}</a>
+          <a
+            href="/"
+            aria-current={linksToCurrentPage("/") ? "page" : undefined}
+          >
+            {(c.values.brand || defaults.brand).text}
+          </a>
         )}
       </div>
       <nav aria-label="Main navigation">
@@ -793,14 +820,25 @@ function Editor() {
                 />
               </label>
               {d.type === "link" && (
-                <label>
-                  Link destination
-                  <input
-                    value={d.href}
-                    onChange={(e) => change("href", e.target.value)}
-                  />
-                  <small>Website address, /page, mailto: or tel:</small>
-                </label>
+                <>
+                  <label>
+                    Link destination
+                    <input
+                      value={d.href}
+                      onChange={(e) => change("href", e.target.value)}
+                    />
+                    <small>Website address, /page, mailto: or tel:</small>
+                  </label>
+                  <label className="check link-visibility">
+                    <input
+                      type="checkbox"
+                      role="switch"
+                      checked={d.visible !== false}
+                      onChange={(e) => change("visible", e.target.checked)}
+                    />
+                    Show link to visitors
+                  </label>
+                </>
               )}
             </>
           ) : (
@@ -971,28 +1009,26 @@ function Editor() {
   );
 }
 export function App() {
-  const [records, setRecords] = useState({}),
+  const [records, setRecords] = useState(null),
     [session, setSession] = useState({}),
     [editing, setEditing] = useState(false),
     [selected, setSelected] = useState(null),
     [draft, setDraft] = useState(null),
     [toast, setToast] = useState(""),
-    [inquiries, setInquiries] = useState(null),
     [contentList, setContentList] = useState(false),
     [search, setSearch] = useState("");
-  useModal(!!inquiries || contentList, () => {
-    setInquiries(null);
-    setContentList(false);
-  });
+  useModal(contentList, () => setContentList(false));
   const pending = useRef([]);
   const values = Object.fromEntries(
-    Object.entries(records).map(([id, v]) => [id, v.value]),
+    Object.entries(records || {}).map(([id, v]) => [id, v.value]),
   );
   if (selected && draft) values[selected] = draft;
   useEffect(() => {
-    Promise.all([request("/api/content"), request("/api/session")])
-      .then(([r, s]) => {
-        setRecords(r);
+    Promise.all([
+      request("/api/content").then(setRecords),
+      request("/api/session"),
+    ])
+      .then(([, s]) => {
         setSession(s);
         setEditing(!!s.email);
       })
@@ -1051,7 +1087,7 @@ export function App() {
     pending,
     setToast,
   };
-  const path = location.pathname;
+  const path = pagePath(location.pathname);
   useEffect(() => {
     const names = {
       "/": "Your moment, beautifully planned",
@@ -1087,17 +1123,6 @@ export function App() {
             onClick={() => setContentList(true)}
           >
             All content
-          </button>
-          <button
-            onClick={async () => {
-              try {
-                setInquiries(await request("/api/inquiries"));
-              } catch (e) {
-                setToast(e.message);
-              }
-            }}
-          >
-            Requests
           </button>
           <button
             onClick={async () => {
@@ -1203,33 +1228,6 @@ export function App() {
                 </button>
               ))}
           </div>
-        </div>
-      )}
-      {inquiries && (
-        <div
-          className="inbox"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Consultation requests"
-        >
-          <button onClick={() => setInquiries(null)}>Close ×</button>
-          <h2>Consultation requests</h2>
-          {inquiries.length ? (
-            inquiries.map((r) => (
-              <article key={r.id}>
-                <small>{new Date(r.created_at).toLocaleString()}</small>
-                <h3>{r.payload.name}</h3>
-                {Object.entries(r.payload).map(([k, v]) => (
-                  <p key={k}>
-                    <strong>{k}: </strong>
-                    {v}
-                  </p>
-                ))}
-              </article>
-            ))
-          ) : (
-            <p>No requests yet.</p>
-          )}
         </div>
       )}
     </C.Provider>
