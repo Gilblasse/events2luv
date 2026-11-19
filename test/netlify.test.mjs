@@ -31,6 +31,13 @@ test('PostgreSQL adapter preserves versions, revisions, publication and durable 
   assert.equal((await a.allBlocks()).missing,undefined);
   assert.equal(await a.rate('login',1,60000),true);
   assert.equal(await a.rate('login',1,60000),false);
+  await a.db.prepare('INSERT INTO admins VALUES(?,?)').run('qa@example.test', 'old-hash');
+  assert.equal(await a.createSession('qa@example.test', 'old-hash', 'second', 'csrf', Date.now() + 5000), true);
+  assert.equal(await a.changePassword('qa@example.test', 'missing', 'old-hash', 'new-hash'), false);
+  assert.equal(await a.changePassword('qa@example.test', 'second', 'old-hash', 'new-hash'), true);
+  assert.deepEqual(await a.db.prepare('SELECT * FROM sessions').all(), []);
+  assert.equal(await a.createSession('qa@example.test', 'old-hash', 'stale', 'csrf', Date.now() + 5000), false);
+  assert.equal(await a.createSession('qa@example.test', 'new-hash', 'valid', 'csrf', Date.now() + 5000), true);
   await pg.close();
 });
 

@@ -32,6 +32,28 @@ export function verify(p, h) {
     return false;
   }
 }
+export function createSession(email, password, token, csrf, expires) {
+  const result = db.prepare(
+    "INSERT INTO sessions SELECT ?,email,?,? FROM admins WHERE email=? AND password=?",
+  ).run(token, csrf, expires, email, password);
+  return result.changes === 1;
+}
+export function changePassword(email, token, previousHash, nextHash) {
+  db.exec("BEGIN IMMEDIATE");
+  try {
+    const result = db.prepare(
+      `UPDATE admins SET password=? WHERE email=? AND password=?
+       AND EXISTS (SELECT 1 FROM sessions WHERE token=? AND email=? AND expires>?)`,
+    ).run(nextHash, email, previousHash, token, email, Date.now());
+    if (result.changes === 1)
+      db.prepare("DELETE FROM sessions WHERE email=?").run(email);
+    db.exec("COMMIT");
+    return result.changes === 1;
+  } catch (error) {
+    db.exec("ROLLBACK");
+    throw error;
+  }
+}
 export function allBlocks() {
   return Object.fromEntries(
     db
