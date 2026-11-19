@@ -459,6 +459,30 @@ textarea::placeholder {
 .login h1 {
   font-size: 4.5rem;
 }
+.password-field {
+  display: grid;
+  gap: 0.6rem;
+}
+.password-control {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+.password-control button {
+  min-width: 4.5rem;
+  border: 1px solid #cfbeb4;
+  border-left: 0;
+  background: #fcfaf6;
+  color: var(--plum);
+  font-size: 0.78rem;
+}
+.password-control button:hover {
+  background: #efe4de;
+}
+.password-control button:focus-visible,
+.password-control input:focus-visible {
+  position: relative;
+  z-index: 1;
+}
 .empty-film {
   padding: 4rem;
   border: 1px dashed var(--gold);
