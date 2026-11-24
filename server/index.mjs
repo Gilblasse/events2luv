@@ -20,7 +20,7 @@ import {
   saveBlock,
 } from "./store.mjs";
 import { inquiryEmail } from "./inquiry-email.mjs";
-import { bookingLabels } from "../src/content.js";
+import { bookingLabels, bookingFieldRequired } from "../src/content.js";
 import { validateBlock } from "./schema.mjs";
 const app = express(),
   prod = process.env.NODE_ENV === "production";
@@ -348,10 +348,14 @@ app.post("/api/inquiries", origin, async (req, res) => {
   for (const k of fields) {
     if (typeof b[k] === "string" && b[k].length <= 4000) data[k] = b[k].trim();
   }
+  const missing = [...fields].some(key => {
+    const id = bookingLabels[key];
+    return bookingFieldRequired(id, blocks[id]?.value) && !data[key];
+  });
   if (
-    (fields.has("name") && !data.name) ||
-    (fields.has("email") && !/^\S+@\S+\.\S+$/.test(data.email || "")) ||
-    (fields.has("occasion") && !data.occasion)
+    missing ||
+    (data.email && !/^\S+@\S+\.\S+$/.test(data.email)) ||
+    (data.flexible && !["yes", "no"].includes(data.flexible))
   )
     return res.status(400).json({
       code: "inquiryInvalid",

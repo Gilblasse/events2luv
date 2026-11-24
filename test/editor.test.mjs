@@ -322,3 +322,31 @@ test("booking fields can be hidden, previewed and restored", async () => {
     dom.reconfigure({ url: "http://localhost/" });
   }
 });
+
+test("admins can require or relax fields, including inspiration and date flexibility", async () => {
+  dom.reconfigure({ url: "http://localhost/booking" });
+  const app = render(React.createElement(App));
+  try {
+    for (const [id, name, required] of [
+      ["nameLabel", "name", false], ["visionLabel", "vision", true],
+      ["inspirationLabel", "inspiration", true], ["flexLabel", "flexible", true],
+    ]) {
+      await waitFor(() => assert.ok(edit(id)));
+      fireEvent.click(edit(id));
+      fireEvent.click(screen.getByRole("switch", { name: "Required when visible" }));
+      fireEvent.click(button("Save changes"));
+      await closed();
+      const field = document.querySelector('[name="' + name + '"]');
+      assert.equal(records[id].value.required, required);
+      assert.equal(field.required, required);
+      assert.equal(field.validity.valueMissing, required);
+      if (name === "flexible") {
+        fireEvent.change(field, { target: { value: "no" } });
+        assert.equal(field.checkValidity(), true);
+      }
+    }
+  } finally {
+    app.unmount();
+    dom.reconfigure({ url: "http://localhost/" });
+  }
+});

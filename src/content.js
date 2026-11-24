@@ -6,6 +6,10 @@ export const bookingLabels = {
 };
 export const isBookingLabel = (id) => Object.values(bookingLabels).includes(id);
 
+export function bookingFieldRequired(id, settings) {
+  return settings?.required ?? ["nameLabel", "emailLabel", "occasionLabel"].includes(id);
+}
+
 export const content = {};
 const t = (id, text) => (content[id] = { type: "text", text });
 const l = (id, text, href) => (content[id] = { type: "link", text, href });

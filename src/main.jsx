@@ -10,6 +10,7 @@ import {
   content as defaults,
   mediaSpecs,
   bookingLabels,
+  bookingFieldRequired,
   isBookingLabel,
 } from "./content.js";
 import "./style.css";
@@ -92,8 +93,15 @@ function E({ id, as = "span", className = "" }) {
     v = c.values[id] || defaults[id];
   const Tag = as;
   let node;
-  if (v.type === "text") node = <Tag>{v.text}</Tag>;
-  else if (v.type === "link") {
+  if (v.type === "text") {
+    const required = isBookingLabel(id) && bookingFieldRequired(id, v);
+    node = (
+      <Tag>
+        {required ? v.text.replace(/\s*\(optional\)\s*$/i, "") : v.text}
+        {required && " (required)"}
+      </Tag>
+    );
+  } else if (v.type === "link") {
     if (!c.records || (v.visible === false && !c.editing)) return null;
     node = (
       <a
@@ -504,6 +512,8 @@ function Booking() {
     [busy, setBusy] = useState(false);
   const inspiration =
     new URLSearchParams(location.search).get("inspiration") || "";
+  const required = (name) =>
+    bookingFieldRequired(bookingLabels[name], c.values[bookingLabels[name]]);
   async function send(e) {
     e.preventDefault();
     setBusy(true);
@@ -549,20 +559,34 @@ function Booking() {
             <E id="formTitle" as="h2" />
             <E id="formIntro" as="p" />
             <BookingField name="inspiration">
-              {(inspiration || c.editing) && (
-                <div className="inspiration">
-                  <E id="inspirationLabel" /> {inspiration.slice(0, 200)}
-                </div>
+              {required("inspiration") ? (
+                <label className="inspiration">
+                  <E id="inspirationLabel" />
+                  <input
+                    name="inspiration"
+                    defaultValue={inspiration.slice(0, 200)}
+                    maxLength="200"
+                    required
+                  />
+                </label>
+              ) : (
+                <>
+                  {(inspiration || c.editing) && (
+                    <div className="inspiration">
+                      <E id="inspirationLabel" /> {inspiration.slice(0, 200)}
+                    </div>
+                  )}
+                  <input type="hidden" name="inspiration" value={inspiration} />
+                </>
               )}
-              <input type="hidden" name="inspiration" value={inspiration} />
             </BookingField>
             <div className="form-grid">
-              <Field name="name" required />
-              <Field name="email" type="email" required />
+              <Field name="name" />
+              <Field name="email" type="email" />
               <BookingField name="occasion">
                 <label>
                   <E id="occasionLabel" />
-                  <select name="occasion" required>
+                  <select name="occasion" required={required("occasion")}>
                     <option value="">
                       {
                         (c.values.occasionPrompt || defaults.occasionPrompt)
@@ -593,10 +617,21 @@ function Booking() {
                 <div>
                   <Field name="date" type="date" />
                   <BookingField name="flexible">
-                    <label className="check">
-                      <input type="checkbox" name="flexible" value="yes" />
-                      <E id="flexLabel" />
-                    </label>
+                    {required("flexible") ? (
+                      <label>
+                        <E id="flexLabel" />
+                        <select name="flexible" required defaultValue="">
+                          <option value="">Select an answer</option>
+                          <option value="yes">Yes</option>
+                          <option value="no">No</option>
+                        </select>
+                      </label>
+                    ) : (
+                      <label className="check">
+                        <input type="checkbox" name="flexible" value="yes" />
+                        <E id="flexLabel" />
+                      </label>
+                    )}
                   </BookingField>
                 </div>
               )}
@@ -643,8 +678,12 @@ function Booking() {
     </section>
   );
 }
-function Field({ name, type = "text", required, area, wide }) {
+function Field({ name, type = "text", area, wide }) {
   const c = useContext(C);
+  const required = bookingFieldRequired(
+    bookingLabels[name],
+    c.values[bookingLabels[name]],
+  );
   return (
     <BookingField name={name}>
       <label className={wide ? "wide" : ""}>
@@ -652,6 +691,7 @@ function Field({ name, type = "text", required, area, wide }) {
         {area ? (
           <textarea
             name={name}
+            required={required}
             rows="4"
             maxLength="4000"
             placeholder={
@@ -924,15 +964,26 @@ function Editor() {
                 />
               </label>
               {isBookingLabel(c.selected) && (
-                <label className="check link-visibility">
-                  <input
-                    type="checkbox"
-                    role="switch"
-                    checked={d.visible !== false}
-                    onChange={(e) => change("visible", e.target.checked)}
-                  />
-                  Show field on booking form
-                </label>
+                <>
+                  <label className="check link-visibility">
+                    <input
+                      type="checkbox"
+                      role="switch"
+                      checked={d.visible !== false}
+                      onChange={(e) => change("visible", e.target.checked)}
+                    />
+                    Show field on booking form
+                  </label>
+                  <label className="check link-visibility">
+                    <input
+                      type="checkbox"
+                      role="switch"
+                      checked={bookingFieldRequired(c.selected, d)}
+                      onChange={(e) => change("required", e.target.checked)}
+                    />
+                    Required when visible
+                  </label>
+                </>
               )}
               {d.type === "link" && (
                 <>

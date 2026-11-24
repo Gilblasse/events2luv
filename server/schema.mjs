@@ -10,7 +10,7 @@ export function validateBlock(id, v) {
   const d = content[id];
   if (!d || !v || v.type !== d.type) return false;
   const fields = {
-    text: isBookingLabel(id) ? ["type", "text", "visible"] : ["type", "text"],
+    text: isBookingLabel(id) ? ["type", "text", "visible", "required"] : ["type", "text"],
     link: ["type", "text", "href", "visible"],
     image: ["type", "src", "alt", "x", "y", "mobileX", "mobileY"],
     video: ["type", "src", "alt", "x", "y", "poster", "captions"],
@@ -21,6 +21,7 @@ export function validateBlock(id, v) {
       typeof v.text === "string" &&
       v.text.trim().length > 0 &&
       v.text.length <= 12000 &&
+      (v.required === undefined || typeof v.required === "boolean") &&
       (v.visible === undefined || typeof v.visible === "boolean")
     );
   if (v.type === "link")

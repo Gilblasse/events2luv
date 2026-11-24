@@ -407,6 +407,19 @@ test("hidden required fields and stale values are excluded from a consultation",
   const rows = await api("/api/inquiries").then(r => r.json());
   assert.deepEqual(rows.find(row => row.id === id).payload, { name: "Visible" });
 });
+test("published field requirements replace the defaults on the server", async () => {
+  for (const [id, required] of [["nameLabel", false], ["visionLabel", true]]) {
+    const result = await api("/api/content/" + id, {
+      method: "PUT", data: { version: 0, value: { type: "text", text: id, required } },
+    });
+    assert.equal(result.status, 200);
+  }
+  const submit = vision => api("/api/inquiries", {
+    method: "POST", admin: false, data: { vision, email: "qa@example.test", occasion: "Wedding" },
+  });
+  assert.equal((await submit("  ")).status, 400);
+  assert.equal((await submit("A garden wedding")).status, 201);
+});
 test("logout revokes session and write access", async () => {
   assert.equal((await api("/api/logout", { method: "POST" })).status, 200);
   assert.deepEqual(await api("/api/session").then((r) => r.json()), {});
