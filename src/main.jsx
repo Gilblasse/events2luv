@@ -10,6 +10,8 @@ import {
   content as defaults,
   mediaSpecs,
   bookingLabels,
+  bookingPrompts,
+  isBookingPrompt,
   bookingFieldRequired,
   isBookingLabel,
 } from "./content.js";
@@ -564,6 +566,7 @@ function Booking() {
                   <E id="inspirationLabel" />
                   <input
                     name="inspiration"
+                    placeholder={(c.values.inspirationPlaceholder || defaults.inspirationPlaceholder).text}
                     defaultValue={inspiration.slice(0, 200)}
                     maxLength="200"
                     required
@@ -621,7 +624,7 @@ function Booking() {
                       <label>
                         <E id="flexLabel" />
                         <select name="flexible" required defaultValue="">
-                          <option value="">Select an answer</option>
+                          <option value="">{(c.values.flexiblePlaceholder || defaults.flexiblePlaceholder).text}</option>
                           <option value="yes">Yes</option>
                           <option value="no">No</option>
                         </select>
@@ -630,6 +633,7 @@ function Booking() {
                       <label className="check">
                         <input type="checkbox" name="flexible" value="yes" />
                         <E id="flexLabel" />
+                        {c.values.flexiblePlaceholder?.text && <small>{c.values.flexiblePlaceholder.text}</small>}
                       </label>
                     )}
                   </BookingField>
@@ -684,6 +688,7 @@ function Field({ name, type = "text", area, wide }) {
     bookingLabels[name],
     c.values[bookingLabels[name]],
   );
+  const hint = (c.values[name + "Placeholder"] || defaults[name + "Placeholder"]).text;
   return (
     <BookingField name={name}>
       <label className={wide ? "wide" : ""}>
@@ -694,10 +699,7 @@ function Field({ name, type = "text", area, wide }) {
             required={required}
             rows="4"
             maxLength="4000"
-            placeholder={
-              (c.values[name + "Placeholder"] || defaults[name + "Placeholder"])
-                ?.text
-            }
+            placeholder={hint}
           />
         ) : (
           <input
@@ -707,12 +709,11 @@ function Field({ name, type = "text", area, wide }) {
             min={type === "number" ? 1 : undefined}
             max={type === "number" ? 100000 : undefined}
             maxLength="300"
-            placeholder={
-              (c.values[name + "Placeholder"] || defaults[name + "Placeholder"])
-                ?.text
-            }
+            placeholder={type === "date" ? undefined : hint}
+            aria-describedby={type === "date" && hint ? "booking-date-hint" : undefined}
           />
         )}
+        {type === "date" && hint && <small id="booking-date-hint">{hint}</small>}
       </label>
     </BookingField>
   );
@@ -955,7 +956,7 @@ function Editor() {
           {["text", "link"].includes(d.type) ? (
             <>
               <label>
-                Words
+                {isBookingPrompt(c.selected) ? "Placeholder or hint text" : "Words"}
                 <textarea
                   autoFocus
                   rows="6"
@@ -983,6 +984,9 @@ function Editor() {
                     />
                     Required when visible
                   </label>
+                  <button type="button" onClick={() => c.open(bookingPrompts[c.selected])}>
+                    Edit placeholder or hint
+                  </button>
                 </>
               )}
               {d.type === "link" && (

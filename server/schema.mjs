@@ -1,4 +1,4 @@
-import { content, isBookingLabel } from "../src/content.js";
+import { content, isBookingLabel, isBookingPrompt } from "../src/content.js";
 export const safeLink = (v) =>
   typeof v === "string" &&
   v.length <= 2048 &&
@@ -19,7 +19,7 @@ export function validateBlock(id, v) {
   if (v.type === "text")
     return (
       typeof v.text === "string" &&
-      v.text.trim().length > 0 &&
+      (isBookingPrompt(id) || v.text.trim().length > 0) &&
       v.text.length <= 12000 &&
       (v.required === undefined || typeof v.required === "boolean") &&
       (v.visible === undefined || typeof v.visible === "boolean")

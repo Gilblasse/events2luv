@@ -350,3 +350,37 @@ test("admins can require or relax fields, including inspiration and date flexibi
     dom.reconfigure({ url: "http://localhost/" });
   }
 });
+
+test("booking field editor saves, cancels and clears prompts without changing answers", async () => {
+  dom.reconfigure({ url: "http://localhost/booking" });
+  const app = render(React.createElement(App));
+  try {
+    for (const [id, selector, text] of [
+      ["nameLabel", '[name="name"]', "Name for the invitation"],
+      ["occasionLabel", '[name="occasion"] option', "Choose your event"],
+      ["dateLabel", "#booking-date-hint", "An estimate is fine"],
+    ]) {
+      await waitFor(() => assert.ok(edit(id)));
+      fireEvent.click(edit(id));
+      fireEvent.click(button("Edit placeholder or hint"));
+      const input = await screen.findByLabelText("Placeholder or hint text");
+      fireEvent.change(input, { target: { value: text } });
+      fireEvent.click(button("Save changes"));
+      await closed();
+      const node = document.querySelector(selector);
+      assert.equal(node.placeholder ?? node.textContent, text);
+      assert.equal(document.querySelector("[name=name]").value, "");
+    }
+    for (const action of ["Cancel", "Save changes"]) {
+      fireEvent.click(edit("nameLabel"));
+      fireEvent.click(button("Edit placeholder or hint"));
+      fireEvent.change(await screen.findByLabelText("Placeholder or hint text"), {target:{value:""}});
+      fireEvent.click(button(action));
+      await closed();
+      assert.equal(document.querySelector("[name=name]").placeholder, action === "Cancel" ? "Name for the invitation" : "");
+    }
+  } finally {
+    app.unmount();
+    dom.reconfigure({ url: "http://localhost/" });
+  }
+});

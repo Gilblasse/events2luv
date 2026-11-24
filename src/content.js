@@ -6,6 +6,13 @@ export const bookingLabels = {
 };
 export const isBookingLabel = (id) => Object.values(bookingLabels).includes(id);
 
+export const bookingPrompts = Object.fromEntries(
+  Object.entries(bookingLabels).map(([name, label]) => [
+    label, name === "occasion" ? "occasionPrompt" : name + "Placeholder",
+  ]),
+);
+export const isBookingPrompt = id => Object.values(bookingPrompts).includes(id);
+
 export function bookingFieldRequired(id, settings) {
   return settings?.required ?? ["nameLabel", "emailLabel", "occasionLabel"].includes(id);
 }
@@ -84,6 +91,9 @@ for (const [id, text] of Object.entries({
   guestsLabel: "Estimated guests",
   budgetLabel: "Event budget (optional)",
   visionLabel: "Your vision (optional)",
+  datePlaceholder: "",
+  flexiblePlaceholder: "Select an answer",
+  inspirationPlaceholder: "",
   namePlaceholder: "First and last name",
   emailPlaceholder: "you@example.com",
   locationPlaceholder: "Venue, town, or still deciding",
