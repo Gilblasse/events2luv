@@ -6,7 +6,12 @@ import React, {
   useContext,
 } from "react";
 import { createRoot } from "react-dom/client";
-import { content as defaults, mediaSpecs } from "./content.js";
+import {
+  content as defaults,
+  mediaSpecs,
+  bookingLabels,
+  isBookingLabel,
+} from "./content.js";
 import "./style.css";
 import "./editorial.css";
 const C = createContext();
@@ -154,6 +159,7 @@ function E({ id, as = "span", className = "" }) {
       {node}
       {c.editing && (
         <button
+          type="button"
           className="edit-button"
           aria-label={`Edit ${id}`}
           onClick={() => c.open(id)}
@@ -480,11 +486,24 @@ function FAQ({ heading = "h1" }) {
     </section>
   );
 }
+function BookingField({ name, children }) {
+  const c = useContext(C);
+  const id = bookingLabels[name];
+  if (c.values[id]?.visible !== false) return children;
+  return c.editing ? (
+    <div>
+      <E id={id} /> <small className="hidden-link-note">Hidden</small>
+    </div>
+  ) : null;
+}
+
 function Booking() {
   const c = useContext(C);
   const [status, setStatus] = useState(""),
     [sent, setSent] = useState(false),
     [busy, setBusy] = useState(false);
+  const inspiration =
+    new URLSearchParams(location.search).get("inspiration") || "";
   async function send(e) {
     e.preventDefault();
     setBusy(true);
@@ -525,64 +544,68 @@ function Booking() {
             <E id="successTitle" as="h2" />
             <E id="successCopy" as="p" />
           </div>
-        ) : (
+        ) : c.records ? (
           <form onSubmit={send}>
             <E id="formTitle" as="h2" />
             <E id="formIntro" as="p" />
-            {new URLSearchParams(location.search).get("inspiration") && (
-              <div className="inspiration">
-                <E id="inspirationLabel" />:{" "}
-                {new URLSearchParams(location.search)
-                  .get("inspiration")
-                  .slice(0, 200)}
-              </div>
-            )}
+            <BookingField name="inspiration">
+              {(inspiration || c.editing) && (
+                <div className="inspiration">
+                  <E id="inspirationLabel" /> {inspiration.slice(0, 200)}
+                </div>
+              )}
+              <input type="hidden" name="inspiration" value={inspiration} />
+            </BookingField>
             <div className="form-grid">
               <Field name="name" required />
               <Field name="email" type="email" required />
-              <label>
-                <E id="occasionLabel" />
-                <select name="occasion" required>
-                  <option value="">
-                    {(c.values.occasionPrompt || defaults.occasionPrompt).text}
-                  </option>
-                  {[
-                    "Wedding",
-                    "Birthday",
-                    "Gathering",
-                    "Meeting",
-                    "Life",
-                    "Other",
-                  ].map((x) => (
-                    <option key={x}>
+              <BookingField name="occasion">
+                <label>
+                  <E id="occasionLabel" />
+                  <select name="occasion" required>
+                    <option value="">
                       {
-                        (c.values["occasion" + x] || defaults["occasion" + x])
+                        (c.values.occasionPrompt || defaults.occasionPrompt)
                           .text
                       }
                     </option>
-                  ))}
-                </select>
-              </label>
-              <div>
-                <Field name="date" type="date" />
-                <label className="check">
-                  <input type="checkbox" name="flexible" value="yes" />
-                  <E id="flexLabel" />
+                    {[
+                      "Wedding",
+                      "Birthday",
+                      "Gathering",
+                      "Meeting",
+                      "Life",
+                      "Other",
+                    ].map((x) => (
+                      <option key={x}>
+                        {
+                          (c.values["occasion" + x] || defaults["occasion" + x])
+                            .text
+                        }
+                      </option>
+                    ))}
+                  </select>
                 </label>
-              </div>
+              </BookingField>
+              {(c.editing ||
+                c.values.dateLabel?.visible !== false ||
+                c.values.flexLabel?.visible !== false) && (
+                <div>
+                  <Field name="date" type="date" />
+                  <BookingField name="flexible">
+                    <label className="check">
+                      <input type="checkbox" name="flexible" value="yes" />
+                      <E id="flexLabel" />
+                    </label>
+                  </BookingField>
+                </div>
+              )}
               <Field name="location" wide />
               <Field name="phone" type="tel" wide />
               <Field name="guests" type="number" />
               <Field name="budget" />
               <Field name="vision" area wide />
             </div>
-            <input
-              type="hidden"
-              name="inspiration"
-              value={
-                new URLSearchParams(location.search).get("inspiration") || ""
-              }
-            />
             <input
               className="honeypot"
               name="website"
@@ -606,7 +629,7 @@ function Booking() {
             <E id="submitNote" as="p" className="fineprint" />
             <E id="privacyNote" as="p" className="fineprint" />
           </form>
-        )}
+        ) : null}
       </div>
       <E id="nextEye" className="eyebrow" />
       <div className="steps">
@@ -623,33 +646,35 @@ function Booking() {
 function Field({ name, type = "text", required, area, wide }) {
   const c = useContext(C);
   return (
-    <label className={wide ? "wide" : ""}>
-      <E id={name + "Label"} />
-      {area ? (
-        <textarea
-          name={name}
-          rows="4"
-          maxLength="4000"
-          placeholder={
-            (c.values[name + "Placeholder"] || defaults[name + "Placeholder"])
-              ?.text
-          }
-        />
-      ) : (
-        <input
-          name={name}
-          type={type}
-          required={required}
-          min={type === "number" ? 1 : undefined}
-          max={type === "number" ? 100000 : undefined}
-          maxLength="300"
-          placeholder={
-            (c.values[name + "Placeholder"] || defaults[name + "Placeholder"])
-              ?.text
-          }
-        />
-      )}
-    </label>
+    <BookingField name={name}>
+      <label className={wide ? "wide" : ""}>
+        <E id={name + "Label"} />
+        {area ? (
+          <textarea
+            name={name}
+            rows="4"
+            maxLength="4000"
+            placeholder={
+              (c.values[name + "Placeholder"] || defaults[name + "Placeholder"])
+                ?.text
+            }
+          />
+        ) : (
+          <input
+            name={name}
+            type={type}
+            required={required}
+            min={type === "number" ? 1 : undefined}
+            max={type === "number" ? 100000 : undefined}
+            maxLength="300"
+            placeholder={
+              (c.values[name + "Placeholder"] || defaults[name + "Placeholder"])
+                ?.text
+            }
+          />
+        )}
+      </label>
+    </BookingField>
   );
 }
 function Login() {
@@ -898,6 +923,17 @@ function Editor() {
                   onChange={(e) => change("text", e.target.value)}
                 />
               </label>
+              {isBookingLabel(c.selected) && (
+                <label className="check link-visibility">
+                  <input
+                    type="checkbox"
+                    role="switch"
+                    checked={d.visible !== false}
+                    onChange={(e) => change("visible", e.target.checked)}
+                  />
+                  Show field on booking form
+                </label>
+              )}
               {d.type === "link" && (
                 <>
                   <label>

@@ -19,6 +19,8 @@ import {
   allBlocks,
   saveBlock,
 } from "./store.mjs";
+import { inquiryEmail } from "./inquiry-email.mjs";
+import { bookingLabels } from "../src/content.js";
 import { validateBlock } from "./schema.mjs";
 const app = express(),
   prod = process.env.NODE_ENV === "production";
@@ -330,53 +332,6 @@ app.delete("/api/upload/:id", gate, origin, csrf, async (req, res) => {
   }
   res.json({ ok: true });
 });
-const inquirySections = [
-  ["Contact", { name: "Name", email: "Email address", phone: "Phone" }],
-  ["Event details", {
-    occasion: "Event type", date: "Preferred date", flexible: "Date flexibility",
-    location: "Location", guests: "Estimated guests", budget: "Event budget",
-  }],
-  ["In their words", { vision: "Event vision", inspiration: "Inspiration" }],
-];
-
-function emailText(value) {
-  return value.replaceAll("&", "&amp;").replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;").replace(/\r\n?|\n/g, "<br>");
-}
-
-function inquiryEmail(data) {
-  const sections = inquirySections.map(([title, labels]) => ({
-    title,
-    rows: Object.entries(labels).map(([key, label]) => [label, data[key] || "Not provided"]),
-  }));
-  const text = sections.map(({ title, rows }) =>
-    [title, ...rows.map(([label, value]) => label + ": " + value)].join("\n")
-  ).join("\n\n");
-
-  const content = sections.map(({ title, rows }) => `
-    <tr><td style="padding:24px 24px 6px">
-      <h2 style="margin:0;color:#4a253b;font:normal 24px Georgia,serif">${title}</h2>
-      <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;table-layout:fixed">
-        ${rows.map(([label, value]) => `<tr>
-          <th scope="row" width="38%" align="left" valign="top" style="padding:11px 8px 11px 0;border-bottom:1px solid #e6dcd3;color:#695a61;font:normal 14px/1.5 Arial,sans-serif">${label}</th>
-          <td valign="top" style="padding:11px 0;border-bottom:1px solid #e6dcd3;color:#382e33;font:16px/1.5 Arial,sans-serif;overflow-wrap:anywhere;word-break:break-word">${emailText(value)}</td>
-        </tr>`).join("")}
-      </table>
-    </td></tr>`).join("");
-  const html = `<!doctype html><html lang="en"><body style="margin:0;background:#f8f4ee">
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#f8f4ee"><tr><td align="center" style="padding:18px 8px">
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#ffffff" style="max-width:600px;border:1px solid #dfd5cc">
-        <tr><td bgcolor="#4a253b" style="padding:26px 24px;border-bottom:3px solid #b79b67">
-          <p style="margin:0 0 14px;color:#ead9c2;font:18px Georgia,serif">Events2Luv</p>
-          <h1 style="margin:0;color:#fff;font:normal 32px/1.15 Georgia,serif">New consultation request</h1>
-        </td></tr>
-        ${content}
-        <tr><td style="padding:20px 24px;color:#695a61;font:14px/1.5 Arial,sans-serif">Reply to this email to contact the requester.</td></tr>
-      </table>
-    </td></tr></table></body></html>`;
-  return { text, html };
-}
-
 app.post("/api/inquiries", origin, async (req, res) => {
   if (!await rate("inquiry:" + req.ip, 5, 3600000))
     return res.status(429).json({
@@ -385,20 +340,22 @@ app.post("/api/inquiries", origin, async (req, res) => {
     });
   const b = req.body;
   if (b.website) return res.json({ ok: true });
-  const fields = inquirySections.flatMap(([, labels]) => Object.keys(labels));
+  const blocks = await allBlocks();
+  const fields = new Set(Object.keys(bookingLabels).filter(
+    key => blocks[bookingLabels[key]]?.value.visible !== false
+  ));
   const data = {};
   for (const k of fields) {
     if (typeof b[k] === "string" && b[k].length <= 4000) data[k] = b[k].trim();
   }
   if (
-    !data.name ||
-    !data.email ||
-    !/^\S+@\S+\.\S+$/.test(data.email) ||
-    !data.occasion
+    (fields.has("name") && !data.name) ||
+    (fields.has("email") && !/^\S+@\S+\.\S+$/.test(data.email || "")) ||
+    (fields.has("occasion") && !data.occasion)
   )
     return res.status(400).json({
       code: "inquiryInvalid",
-      error: "Please enter your name, email, and event type.",
+      error: "Please check the required fields and try again.",
     });
   const id = randomUUID();
   await db.prepare("INSERT INTO inquiries VALUES(?,?,?)").run(
@@ -411,9 +368,9 @@ app.post("/api/inquiries", origin, async (req, res) => {
       await nodemailer.createTransport(process.env.SMTP_URL).sendMail({
         from: process.env.MAIL_FROM,
         to: process.env.INQUIRY_TO,
-        replyTo: data.email,
+        ...(data.email && { replyTo: data.email }),
         subject: "Events2Luv consultation request",
-        ...inquiryEmail(data),
+        ...inquiryEmail(data, fields),
       });
     } catch {
       console.error("Inquiry saved; email notification failed:", id);

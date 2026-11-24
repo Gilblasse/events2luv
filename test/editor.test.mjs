@@ -299,3 +299,26 @@ test("the change password page masks both new passwords and toggles them indepen
     dom.reconfigure({ url: "http://localhost/" });
   }
 });
+
+test("booking fields can be hidden, previewed and restored", async () => {
+  dom.reconfigure({ url: "http://localhost/booking?inspiration=Garden" });
+  const app = render(React.createElement(App));
+  try {
+    await waitFor(() => assert.ok(edit("emailLabel")));
+    const input = () => document.querySelector('input[name="email"]');
+    for (const visible of [false, true]) {
+      fireEvent.click(edit("emailLabel"));
+      fireEvent.click(screen.getByRole("switch", { name: "Show field on booking form" }));
+      fireEvent.click(button("Save changes"));
+      await closed();
+      fireEvent.click(button("Preview website"));
+      await waitFor(() => assert.equal(Boolean(input()), visible));
+      assert.equal(new FormData(document.querySelector("form")).has("email"), visible);
+      fireEvent.click(button("Edit mode"));
+      await waitFor(() => assert.ok(edit("emailLabel")));
+    }
+  } finally {
+    app.unmount();
+    dom.reconfigure({ url: "http://localhost/" });
+  }
+});

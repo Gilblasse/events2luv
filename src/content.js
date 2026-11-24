@@ -1,3 +1,11 @@
+export const bookingLabels = {
+  name: "nameLabel", email: "emailLabel", phone: "phoneLabel",
+  occasion: "occasionLabel", date: "dateLabel", flexible: "flexLabel",
+  location: "locationLabel", guests: "guestsLabel", budget: "budgetLabel",
+  vision: "visionLabel", inspiration: "inspirationLabel",
+};
+export const isBookingLabel = (id) => Object.values(bookingLabels).includes(id);
+
 export const content = {};
 const t = (id, text) => (content[id] = { type: "text", text });
 const l = (id, text, href) => (content[id] = { type: "link", text, href });
@@ -171,7 +179,7 @@ for (const [id, text] of Object.entries({
   phoneLabel: "Phone (optional)",
   phonePlaceholder: "Your preferred contact number",
   inquiryInvalid:
-    "Please enter your name, a valid email address, and your event type.",
+    "Please check the required fields and try again.",
   inquiryRate: "Please try again later, or email us directly.",
   inquiryFailed:
     "We could not send your request. Please try again or email us directly.",

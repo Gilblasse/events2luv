@@ -1,4 +1,4 @@
-import { content } from "../src/content.js";
+import { content, isBookingLabel } from "../src/content.js";
 export const safeLink = (v) =>
   typeof v === "string" &&
   v.length <= 2048 &&
@@ -10,7 +10,7 @@ export function validateBlock(id, v) {
   const d = content[id];
   if (!d || !v || v.type !== d.type) return false;
   const fields = {
-    text: ["type", "text"],
+    text: isBookingLabel(id) ? ["type", "text", "visible"] : ["type", "text"],
     link: ["type", "text", "href", "visible"],
     image: ["type", "src", "alt", "x", "y", "mobileX", "mobileY"],
     video: ["type", "src", "alt", "x", "y", "poster", "captions"],
@@ -20,7 +20,8 @@ export function validateBlock(id, v) {
     return (
       typeof v.text === "string" &&
       v.text.trim().length > 0 &&
-      v.text.length <= 12000
+      v.text.length <= 12000 &&
+      (v.visible === undefined || typeof v.visible === "boolean")
     );
   if (v.type === "link")
     return (

@@ -391,6 +391,22 @@ test("image and video edits and consultation inbox survive another server restar
     "QA Test",
   );
 });
+test("hidden required fields and stale values are excluded from a consultation", async () => {
+  for (const id of ["emailLabel", "occasionLabel", "inspirationLabel"]) {
+    const result = await api("/api/content/" + id, {
+      method: "PUT", data: { version: 0, value: {type: "text", text: id, visible: false} },
+    });
+    assert.equal(result.status, 200);
+  }
+  const result = await api("/api/inquiries", {
+    method: "POST", admin: false,
+    data: { name: "Visible", email: "invalid stale email", inspiration: "Private" },
+  });
+  assert.equal(result.status, 201);
+  const { id } = await result.json();
+  const rows = await api("/api/inquiries").then(r => r.json());
+  assert.deepEqual(rows.find(row => row.id === id).payload, { name: "Visible" });
+});
 test("logout revokes session and write access", async () => {
   assert.equal((await api("/api/logout", { method: "POST" })).status, 200);
   assert.deepEqual(await api("/api/session").then((r) => r.json()), {});
